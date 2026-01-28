@@ -1,8 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { ContextData } from '../types';
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
 export const generateGeminiResponse = async (userText: string, contextData: ContextData): Promise<string> => {
   const systemPrompt = `You are the AI assistant for "Solar Synergy", a micromobility charging app at Universiti Teknologi PETRONAS (UTP). 
       
@@ -18,8 +16,10 @@ export const generateGeminiResponse = async (userText: string, contextData: Cont
   Keep responses short (under 3 sentences) and friendly. Use emojis occasionally.`;
 
   try {
+    // Initializing inside the function ensures it picks up the environment variable injected by Vercel
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3-flash-preview',
       contents: userText,
       config: {
         systemInstruction: systemPrompt,
@@ -29,6 +29,7 @@ export const generateGeminiResponse = async (userText: string, contextData: Cont
     return response.text || "I'm having trouble connecting to the solar grid right now. Try again later!";
   } catch (error) {
     console.error("Gemini API Error:", error);
-    return "Sorry, I couldn't reach the AI service. Please try again.";
+    // Return a graceful error message instead of crashing the UI
+    return "Sorry, I couldn't reach the AI service. Please check your connection and try again.";
   }
 };
