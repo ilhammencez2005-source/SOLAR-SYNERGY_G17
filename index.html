@@ -1,0 +1,49 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solar Synergy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      // Shim process.env to prevent ReferenceError in browser environments
+      window.process = window.process || { env: {} };
+    </script>
+    <style>
+      .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+      .scrollbar-hide::-webkit-scrollbar { display: none; }
+      .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+      @keyframes fade-in-down {
+        0% { opacity: 0; transform: translateY(-10px); }
+        100% { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes slide-up {
+        0% { transform: translateY(100%); }
+        100% { transform: translateY(0); }
+      }
+      .animate-fade-in-down {
+        animation: fade-in-down 0.3s ease-out;
+      }
+      .animate-slide-up {
+        animation: slide-up 0.3s ease-out;
+      }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0"
+  }
+}
+</script>
+</head>
+<body class="bg-gray-50 h-screen w-full overflow-hidden">
+    <div id="root" class="h-full w-full"></div>
+    <!-- Entry point for the React application -->
+    <script type="module" src="/index.tsx"></script>
+</body>
+</html>

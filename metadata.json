@@ -1,0 +1,7 @@
+{
+  "name": "Copy of Copy of Solar Synergy",
+  "description": "UTP Micromobility Charging App with AI Assistant",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
