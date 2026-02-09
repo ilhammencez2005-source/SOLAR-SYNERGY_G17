@@ -1,22 +1,26 @@
+
 import { GoogleGenAI } from "@google/genai";
 import { ContextData } from '../types';
 
 export const generateGeminiResponse = async (userText: string, contextData: ContextData): Promise<string> => {
-  const systemPrompt = `You are the AI assistant for "Solar Synergy", a micromobility charging app at Universiti Teknologi PETRONAS (UTP). 
+  const systemPrompt = `You are the AI assistant for "Solar Synergy" at UTP. 
       
-  Context Data:
-  - User Wallet Balance: RM ${contextData.walletBalance.toFixed(2)}
-  - Current Station: ${contextData.selectedStation ? contextData.selectedStation.name : 'None selected'}
-  - Stations Available: Village 3c (Active), Village 4 (Occupied).
-  - Pricing: Normal charging is FREE (Solar powered). Fast charging is RM 1.20/kWh.
+  Hardware Knowledge (MANDATORY):
+  - Lock/Unlock Mechanism: App sends 'U' (Unlock) and 'L' (Lock).
+  - Servo Wiring: Signal wire to Pin 9 (Arduino) or Pin 18 (ESP32).
+  - LED Indicators: 
+      * Red LED (Locked) -> Pin 4.
+      * Green LED (Unlocked) -> Pin 5.
+  - Bluetooth Advice: Users must use HM-10 (BLE). The older HC-05 will NOT work with browsers. 
+  - Bluetooth Wiring: RX to Pin 2, TX to Pin 3 using SoftwareSerial.
+
+  Context:
+  - Wallet: RM ${contextData.walletBalance.toFixed(2)}
+  - Active Station: ${contextData.selectedStation ? contextData.selectedStation.name : 'None'}
   
-  Your goal is to be helpful, concise, and encourage eco-friendly habits.
-  If asked about location, use the context provided.
-  If asked about costs, explain the difference between Eco (Free) and Turbo (Paid).
-  Keep responses short (under 3 sentences) and friendly. Use emojis occasionally.`;
+  Be very concise (max 2 sentences), encouraging, and use emojis. Guide users to the 'Smart Bridge' in the Profile for code sketches. ⚡️🌱`;
 
   try {
-    // Initializing inside the function ensures it picks up the environment variable injected by Vercel
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
@@ -26,10 +30,9 @@ export const generateGeminiResponse = async (userText: string, contextData: Cont
       }
     });
 
-    return response.text || "I'm having trouble connecting to the solar grid right now. Try again later!";
+    return response.text || "Solar grid offline. Try again later!";
   } catch (error) {
-    console.error("Gemini API Error:", error);
-    // Return a graceful error message instead of crashing the UI
-    return "Sorry, I couldn't reach the AI service. Please check your connection and try again.";
+    console.error("Gemini Error:", error);
+    return "Connection to the AI guide lost. Please check your data connection.";
   }
 };
