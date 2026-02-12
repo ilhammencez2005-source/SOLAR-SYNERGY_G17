@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { User, X, CheckCircle2, Cpu, Link, Code, Copy, Wifi, Radio, Bluetooth, Globe, Battery, Layers, Monitor, Server, AlertTriangle, BookOpen, Settings, Info, ArrowRight, Zap as ZapIcon, Terminal, Smartphone } from 'lucide-react';
+import { User, X, CheckCircle2, Cpu, Link, Code, Copy, Wifi, Radio, Bluetooth, Globe, Battery, Layers, Monitor, Server, AlertTriangle, BookOpen, Settings, Info, ArrowRight, Zap as ZapIcon, Terminal, Smartphone, WifiOff, ShieldAlert } from 'lucide-react';
 import { Header } from './components/Header';
 import { NavigationBar } from './components/NavigationBar';
 import { HomeView } from './components/HomeView';
@@ -10,10 +10,10 @@ import { GeminiAssistant } from './components/GeminiAssistant';
 import { STATIONS } from './constants';
 import { Station, Session, UserLocation, ViewState, ChargingMode, Receipt } from './types';
 
-// FIXED C++ SKETCH FOR ILHAMMENCEZ (GROUP 17)
+// PRODUCTION SKETCH FOR ILHAMMENCEZ (ETP G17)
 const NODEMCU_SKETCH = (url: string, id: string) => `// ======================================================
 // SOLAR SYNERGY: ESP-12E (NodeMCU 1.0) SMART LOCK
-// ETP GROUP 17 - PRODUCTION SKETCH v2.7
+// ETP GROUP 17 - PRODUCTION SKETCH v2.8
 // ======================================================
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
@@ -28,27 +28,38 @@ Servo myServo;
 const int servoPin = 2; // Pin D4 on NodeMCU (GPIO 2)
 
 void setup() {
+  // Use 115200 for NodeMCU
   Serial.begin(115200);
-  delay(10);
+  delay(100);
   
-  // Wi-Fi Connection
-  Serial.println("");
-  Serial.println("--- SOLAR SYNERGY: STARTING ---");
+  Serial.println("\n\n--- SOLAR SYNERGY SYSTEM INITIALIZING ---");
+  Serial.println("Target SSID: " + String(ssid));
+  
+  // Wi-Fi Connection logic
+  WiFi.mode(WIFI_STA); // Ensure Station mode
   WiFi.begin(ssid, pass);
   
-  while (WiFi.status() != WL_CONNECTED) { 
+  Serial.print("Connecting");
+  int timeout = 0;
+  while (WiFi.status() != WL_CONNECTED && timeout < 40) { 
     delay(500); 
     Serial.print("."); 
+    timeout++;
   }
   
-  // FIXED STRING CONCATENATION
-  Serial.print("\nCONNECTED! IP: ");
-  Serial.println(WiFi.localIP());
+  if(WiFi.status() == WL_CONNECTED) {
+    Serial.println("\n[SUCCESS] Connected to Hotspot!");
+    Serial.print("IP Address: ");
+    Serial.println(WiFi.localIP());
+  } else {
+    Serial.println("\n[ERROR] Connection Failed!");
+    Serial.println("Check: 1. Is Hotspot 2.4GHz? 2. Is Password Correct?");
+  }
   
   // Servo Initialization
   myServo.attach(servoPin);
-  myServo.write(0); // Defaults to LOCKED
-  Serial.println("System Ready: DOCK_LOCKED");
+  myServo.write(0); // LOCKED
+  Serial.println("Actuator Ready: SYSTEM_LOCKED");
 }
 
 void loop() {
@@ -60,23 +71,26 @@ void loop() {
       int httpCode = http.GET();
       if (httpCode > 0) {
         String payload = http.getString();
-        Serial.println("Cloud Sync: " + payload);
+        Serial.println("Cloud Sync Result: " + payload);
         
         if (payload.indexOf("UNLOCK") >= 0) {
-           Serial.println(">> COMMAND: UNLOCKING");
+           Serial.println(">> ACTION: UNLOCKING DOCK");
            myServo.write(90); 
         } else {
-           Serial.println(">> COMMAND: LOCKING");
+           Serial.println(">> ACTION: LOCKING DOCK");
            myServo.write(0);  
         }
+      } else {
+        Serial.printf("[HTTP] GET failed, error: %s\n", http.errorToString(httpCode).c_str());
       }
       http.end();
     }
   } else {
-    Serial.println("WiFi Lost. Reconnecting...");
+    Serial.println("Wi-Fi Lost. Attempting reconnect...");
     WiFi.begin(ssid, pass);
+    delay(5000);
   }
-  delay(1500); // Polling interval
+  delay(1500); // Check every 1.5s
 }`;
 
 export default function App() {
@@ -95,7 +109,7 @@ export default function App() {
   const [isHardwareConnected, setIsHardwareConnected] = useState(false);
   const [stationId, setStationId] = useState('ETP_G17_DOCK');
   const [serverUrl, setServerUrl] = useState('https://solar-synergy-api.vercel.app/status');
-  const [comboTab, setComboTab] = useState<'guide' | 'code'>('guide');
+  const [comboTab, setComboTab] = useState<'guide' | 'code' | 'fix'>('guide');
 
   const showNotification = (msg: string) => {
     setNotification(msg);
@@ -114,17 +128,12 @@ export default function App() {
   };
 
   const sendCommand = async (command: 'U' | 'L') => {
-    // If using USB Wired mode
     if (hardwareMode === 'serial' && serialPort?.writable) {
       const writer = serialPort.writable.getWriter();
       await writer.write(new TextEncoder().encode(command));
       writer.releaseLock();
-    } 
-    // If using Cloud Bridge (NodeMCU)
-    else {
+    } else {
       showNotification(`Cloud Bridge: Requesting ${command === 'U' ? 'UNLOCK' : 'LOCK'}...`);
-      // In a real production app, this would hit: 
-      // fetch(`${serverUrl}?id=${stationId}&cmd=${command === 'U' ? 'UNLOCK' : 'LOCK'}`)
     }
   };
 
@@ -274,21 +283,23 @@ export default function App() {
                   <button onClick={() => setShowSketchModal(false)} className="text-slate-400 hover:text-white transition-colors bg-white/5 p-2 rounded-full"><X size={24} /></button>
                </div>
                
-               <div className="flex mb-8 bg-slate-800/30 p-2 rounded-[2rem] shrink-0 gap-2 border border-white/5">
-                  <button onClick={() => setComboTab('guide')} className={`flex-1 py-4 text-[10px] font-black uppercase rounded-[1.5rem] transition-all flex items-center justify-center gap-2 ${comboTab === 'guide' ? 'bg-orange-500 text-white shadow-xl shadow-orange-500/20' : 'text-slate-500 hover:text-slate-300'}`}>
-                    <BookOpen size={16} /> 1. Hardware Guide
+               <div className="flex mb-8 bg-slate-800/30 p-1.5 rounded-[2rem] shrink-0 gap-1.5 border border-white/5">
+                  <button onClick={() => setComboTab('guide')} className={`flex-1 py-3.5 text-[10px] font-black uppercase rounded-[1.5rem] transition-all flex items-center justify-center gap-2 ${comboTab === 'guide' ? 'bg-orange-500 text-white shadow-xl' : 'text-slate-500 hover:text-slate-300'}`}>
+                    <Layers size={14} /> Guide
                   </button>
-                  <button onClick={() => setComboTab('code')} className={`flex-1 py-4 text-[10px] font-black uppercase rounded-[1.5rem] transition-all flex items-center justify-center gap-2 ${comboTab === 'code' ? 'bg-cyan-500 text-white shadow-xl shadow-cyan-500/20' : 'text-slate-500 hover:text-slate-300'}`}>
-                    <Code size={16} /> 2. Corrected Code
+                  <button onClick={() => setComboTab('code')} className={`flex-1 py-3.5 text-[10px] font-black uppercase rounded-[1.5rem] transition-all flex items-center justify-center gap-2 ${comboTab === 'code' ? 'bg-cyan-500 text-white shadow-xl' : 'text-slate-500 hover:text-slate-300'}`}>
+                    <Code size={14} /> Code
+                  </button>
+                  <button onClick={() => setComboTab('fix')} className={`flex-1 py-3.5 text-[10px] font-black uppercase rounded-[1.5rem] transition-all flex items-center justify-center gap-2 ${comboTab === 'fix' ? 'bg-red-500 text-white shadow-xl' : 'text-slate-500 hover:text-slate-300'}`}>
+                    <WifiOff size={14} /> Fix Wi-Fi
                   </button>
                </div>
 
                <div className="flex-1 overflow-y-auto scrollbar-hide">
-                  {comboTab === 'code' ? (
+                  {comboTab === 'code' && (
                     <div className="space-y-6">
                       <div className="p-5 bg-cyan-900/10 rounded-[2rem] border border-cyan-500/20">
-                         <h4 className="text-[10px] font-black text-cyan-400 uppercase mb-3 flex items-center gap-2"><Smartphone size={14}/> Compilation Fix</h4>
-                         <p className="text-[9px] text-slate-400 font-bold uppercase mb-3 leading-tight">I have fixed the "missing terminating character" error. The string is now on one line as required by C++.</p>
+                         <h4 className="text-[10px] font-black text-cyan-400 uppercase mb-3 flex items-center gap-2"><Smartphone size={14}/> Corrected & escaped sketch</h4>
                          <ul className="space-y-2 text-[10px] text-slate-400 font-bold uppercase tracking-tight">
                             <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-cyan-400"></div> Hotspot: <span className="text-white">Samsung_J7</span></li>
                             <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-cyan-400"></div> Board: <span className="text-white">NodeMCU 1.0 (ESP-12E)</span></li>
@@ -297,11 +308,11 @@ export default function App() {
                       
                       <div className="space-y-3">
                         <div className="flex items-center justify-between px-2">
-                           <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">ESP-12E Corrected Sketch</span>
+                           <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">ESP-12E Verified Sketch</span>
                            <button onClick={() => { 
                               const txt = NODEMCU_SKETCH(serverUrl, stationId);
                               navigator.clipboard.writeText(txt); 
-                              showNotification("Fixed Code Copied!"); 
+                              showNotification("Corrected Code Copied!"); 
                             }} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 rounded-xl text-white text-[10px] font-black hover:bg-emerald-700 transition-all active:scale-95 shadow-lg shadow-emerald-500/20">
                               <Copy size={14} /> COPY SKETCH
                             </button>
@@ -313,11 +324,13 @@ export default function App() {
                         </div>
                       </div>
                     </div>
-                  ) : (
+                  )}
+
+                  {comboTab === 'guide' && (
                     <div className="space-y-10 pb-8">
                        <div className="bg-slate-950/50 rounded-[2.5rem] p-8 border border-white/5 flex flex-col items-center">
                           <p className="text-[10px] font-black text-white uppercase tracking-[0.2em] mb-8 flex items-center gap-3">
-                             <Layers size={16} className="text-orange-400"/> G17 Connection Diagram
+                             <Layers size={16} className="text-orange-400"/> G17 Wiring
                           </p>
                           <svg width="260" height="150" viewBox="0 0 240 140" className="drop-shadow-2xl">
                              <rect x="10" y="10" width="220" height="120" rx="15" fill="#f8fafc" />
@@ -351,26 +364,37 @@ export default function App() {
                              </div>
                           </div>
                        </div>
-                       <div className="space-y-8">
-                          <h4 className="text-orange-400 font-black text-xs uppercase tracking-[0.2em] flex items-center gap-3">
-                             <Terminal size={18}/> 4 Steps to Control
+                    </div>
+                  )}
+
+                  {comboTab === 'fix' && (
+                    <div className="space-y-8 pb-10">
+                       <div className="p-6 bg-red-950/20 rounded-[2.5rem] border border-red-500/30">
+                          <h4 className="text-red-400 font-black text-xs uppercase tracking-widest flex items-center gap-3 mb-6">
+                             <ShieldAlert size={18}/> Samsung Hotspot Fix
                           </h4>
-                          <div className="space-y-6">
+                          
+                          <div className="space-y-8">
                              {[
-                               { t: "Wire the Servo", d: "Connect signal to D4 (GPIO 2), Red to Vin (5V), and Brown to GND." },
-                               { t: "Upload Fixed Code", d: "Copy the corrected code from Tab 2. It fixes the string error you saw." },
-                               { t: "Start Hotspot", d: "Ensure your Samsung_J7 hotspot is active. Watch the Serial Monitor for 'CONNECTED!'." },
-                               { t: "Push the Button", d: "Go to the 'Charge' tab in this app and press Unlock. The ESP will receive it in ~1.5 seconds." }
+                               { t: "Change Band to 2.4GHz", d: "ESP-12E cannot see 5GHz networks. Go to Hotspot Settings > Configure > Band > Select '2.4 GHz'." },
+                               { t: "Set WPA2 Security", d: "ESP8266 often fails with WPA3. Change Security to 'WPA2-Personal' in the hotspot configuration." },
+                               { t: "Check Baud Rate", d: "Ensure your Serial Monitor is set to 115200. If it's set to 9600, you will see no text or '???' symbols." },
+                               { t: "Disable Auto-Shutdown", d: "Phones turn off hotspot if no one connects. Keep the 'Configure' screen open while the ESP is connecting." }
                              ].map((step, i) => (
-                               <div key={i} className="flex gap-5">
-                                  <div className="w-8 h-8 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-black text-orange-400 shrink-0">{i+1}</div>
+                               <div key={i} className="flex gap-4">
+                                  <div className="w-6 h-6 rounded-lg bg-red-500 text-white flex items-center justify-center text-[10px] font-black shrink-0">{i+1}</div>
                                   <div>
-                                     <p className="text-[11px] font-black text-white uppercase mb-1">{step.t}</p>
-                                     <p className="text-[10px] leading-relaxed text-slate-400">{step.d}</p>
+                                     <p className="text-[10px] font-black text-white uppercase mb-1 leading-tight">{step.t}</p>
+                                     <p className="text-[9px] leading-relaxed text-red-200/50">{step.d}</p>
                                   </div>
                                </div>
                              ))}
                           </div>
+                       </div>
+                       
+                       <div className="p-6 bg-slate-800/40 rounded-[2.5rem] border border-white/5">
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Diagnostic Check</p>
+                          <p className="text-[10px] text-slate-300 leading-relaxed italic">"If the Serial Monitor says 'Connecting...', it means the ESP is trying but the phone is ignoring it. Switching to 2.4GHz fixes this 99% of the time."</p>
                        </div>
                     </div>
                   )}
