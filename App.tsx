@@ -25,9 +25,7 @@ export default function App() {
   const [syncing, setSyncing] = useState(false);
   const [bridgeError, setBridgeError] = useState<string | null>(null);
   
-  // Internal API path
   const apiPath = '/api/status';
-  // Full URL for display (Arduino)
   const fullUrl = `${window.location.protocol}//${window.location.host}${apiPath}`;
   const [stationId, setStationId] = useState('ETP-G17-HUB');
 
@@ -41,7 +39,7 @@ export default function App() {
     setBridgeError(null);
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const timeoutId = setTimeout(() => controller.abort(), 6000);
       
       const res = await fetch(apiPath, { 
         method: 'GET',
@@ -50,28 +48,23 @@ export default function App() {
       });
       clearTimeout(timeoutId);
       
-      if (!res.ok) {
-        throw new Error(`Server returned status ${res.status}`);
-      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-      const contentType = res.headers.get('content-type') || '';
       const text = await res.text();
-      
-      // If we get HTML, the rewrite is sending us the App instead of the API
-      if (text.trim().toLowerCase().startsWith('<!doctype html>')) {
-        console.error("Bridge Error: Received HTML. Rewrites might be misconfigured.");
-        setBridgeError("Endpoint returning HTML instead of status. Check vercel.json.");
+      const trimmedText = text.trim().toUpperCase();
+
+      if (trimmedText.startsWith('<!DOCTYPE')) {
         setIsHardwareOnline(false);
-      } else if (text.trim() === 'LOCK' || text.trim() === 'UNLOCK') {
+        setBridgeError("Server returned HTML instead of status. Check deployment.");
+      } else if (trimmedText === 'LOCK' || trimmedText === 'UNLOCK') {
         setIsHardwareOnline(true);
       } else {
-        console.warn("Bridge responded with unexpected text:", text);
-        setIsHardwareOnline(true); // Still treat as online if it's a valid 200 non-HTML
+        setIsHardwareOnline(true); // Treat as connected if 200 OK
       }
     } catch (e: any) {
-      console.error("Bridge check failed:", e);
+      console.error("Bridge link failure:", e);
       setIsHardwareOnline(false);
-      setBridgeError(e.name === 'AbortError' ? "Connection Timeout" : "Bridge Endpoint Not Found");
+      setBridgeError(e.name === 'AbortError' ? "Request Timeout" : "Bridge Path Not Found");
     } finally {
       setSyncing(false);
     }
@@ -79,7 +72,7 @@ export default function App() {
 
   useEffect(() => {
     checkHardwareStatus();
-    const interval = setInterval(checkHardwareStatus, 30000); // Check every 30s
+    const interval = setInterval(checkHardwareStatus, 25000);
     return () => clearInterval(interval);
   }, []);
 
@@ -91,12 +84,11 @@ export default function App() {
          body: JSON.stringify({ id: stationId, command })
        });
        if (res.ok) {
-         showNotification(`Cloud: ${command} Command Sent`);
+         showNotification(`Cloud: ${command} Synced`);
        } else {
-         showNotification("Bridge Sync Failed");
+         showNotification("Bridge Sync Error");
        }
      } catch (e) {
-       console.error("Failed to send command.");
        showNotification("Bridge Offline");
      }
   };
@@ -188,17 +180,17 @@ export default function App() {
                    <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Globe size={16} className="text-emerald-400" />
-                        <h3 className="text-white font-black text-xs uppercase tracking-wider">Bridge Status</h3>
+                        <h3 className="text-white font-black text-xs uppercase tracking-wider">Bridge Sync</h3>
                       </div>
                       <div className={`px-4 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${isHardwareOnline ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
-                        {isHardwareOnline ? 'System Linked' : 'Link Broken'}
+                        {isHardwareOnline ? 'Linked' : 'Broken'}
                       </div>
                    </div>
 
                    <div className="space-y-4">
                       <div className="bg-white/5 rounded-2xl p-5 border border-white/5">
                         <p className="text-[8px] font-black text-slate-500 uppercase mb-3 flex items-center gap-2">
-                          <Link size={10} /> Arduino IDE Config
+                          <Link size={10} /> Arduino API Link
                         </p>
                         <div className="flex items-center gap-2 bg-black/40 p-3 rounded-xl border border-white/5">
                            <code className="flex-1 text-[9px] text-emerald-300 font-mono break-all overflow-hidden whitespace-nowrap overflow-ellipsis">
@@ -219,7 +211,7 @@ export default function App() {
                       <div className="flex gap-2">
                          <div className="flex-1 bg-white/5 rounded-2xl p-4 border border-white/5">
                             <p className="text-[8px] font-black text-slate-500 uppercase mb-1">State</p>
-                            <p className="text-[10px] font-black text-white uppercase">{isHardwareOnline ? 'Ready for Hub' : 'Checking...'}</p>
+                            <p className="text-[10px] font-black text-white uppercase">{isHardwareOnline ? 'Online' : 'Reconnecting'}</p>
                          </div>
                          <button onClick={checkHardwareStatus} className="bg-emerald-600 px-6 rounded-2xl text-white shadow-lg active:scale-95 transition-all">
                             <RefreshCw size={18} className={syncing ? 'animate-spin' : ''} />
@@ -229,8 +221,8 @@ export default function App() {
                    
                    {!isHardwareOnline && (
                      <div className="text-[9px] text-rose-300 font-bold bg-rose-500/10 p-4 rounded-2xl border border-rose-500/20 space-y-1">
-                        <p className="uppercase">⚠️ Bridge Check Failed</p>
-                        <p className="font-medium opacity-80 leading-relaxed">{bridgeError || "Could not reach the status endpoint. Ensure the file 'api/status.ts' exists and you have deployed."}</p>
+                        <p className="uppercase">⚠️ Bridge Error</p>
+                        <p className="font-medium opacity-80 leading-relaxed">{bridgeError || "Ensure api/status.ts is deployed and public."}</p>
                      </div>
                    )}
                 </div>
