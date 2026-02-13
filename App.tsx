@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { User, CheckCircle2, Wifi, Search, Activity, RefreshCw, Zap as ZapIcon, Info, Settings2, AlertTriangle, ArrowRight, WifiOff, ShieldAlert } from 'lucide-react';
+import { User, CheckCircle2, Wifi, Search, Activity, RefreshCw, Zap as ZapIcon, Info, Settings2, AlertTriangle, ArrowRight, WifiOff, ShieldAlert, Globe, Link } from 'lucide-react';
 import { Header } from './components/Header';
 import { NavigationBar } from './components/NavigationBar';
 import { HomeView } from './components/HomeView';
@@ -20,9 +20,11 @@ export default function App() {
   const [showTopUpModal, setShowTopUpModal] = useState(false);
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   
-  // REAL-TIME HARDWARE SYNC STATE
+  // HARDWARE CONFIGURATION
   const [isHardwareOnline, setIsHardwareOnline] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  // UPDATED: Automatically uses your actual Vercel URL
+  const [cloudUrl, setCloudUrl] = useState(`https://${window.location.hostname}/api/status`);
   const [stationId, setStationId] = useState('ETP-G17-HUB');
 
   const showNotification = (msg: string) => {
@@ -30,27 +32,50 @@ export default function App() {
     setTimeout(() => setNotification(null), 3000);
   };
 
-  // Simulate checking for hardware heartbeat
-  const checkHardwareStatus = () => {
+  const checkHardwareStatus = async () => {
     setSyncing(true);
-    // Simulate a network delay
-    setTimeout(() => {
-      // Logic: For demo, we alternate or succeed. 
-      // In production, this would fetch /ping?id=ETP-G17-HUB
-      const status = Math.random() > 0.15; // 85% chance to show connected
-      setIsHardwareOnline(status);
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      
+      const res = await fetch(cloudUrl, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      
+      if (res.ok) {
+        setIsHardwareOnline(true);
+        // showNotification("Cloud Bridge Active ⚡️");
+      } else {
+        throw new Error();
+      }
+    } catch (e) {
+      setIsHardwareOnline(false);
+      console.error("Bridge check failed. Check if /api/status exists.");
+    } finally {
       setSyncing(false);
-      showNotification(status ? "Hardware Hub Synced ⚡️" : "Hub Offline: Check Hotspot");
-    }, 1500);
+    }
   };
 
   useEffect(() => {
-    // Check status on load
     checkHardwareStatus();
-  }, []);
+    // Check every 10 seconds to keep the status updated
+    const interval = setInterval(checkHardwareStatus, 10000);
+    return () => clearInterval(interval);
+  }, [cloudUrl]);
 
-  const sendCommand = async (command: 'U' | 'L') => {
-     console.log(`Cloud Command Sent: ${command}`);
+  const sendCommand = async (command: 'UNLOCK' | 'LOCK') => {
+     try {
+       const res = await fetch(cloudUrl, {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ id: stationId, command })
+       });
+       if (res.ok) {
+         console.log(`Command ${command} sent successfully`);
+       }
+     } catch (e) {
+       console.error("Failed to send command to hardware bridge.");
+       showNotification("Bridge Error: Command not sent");
+     }
   };
 
   useEffect(() => {
@@ -71,20 +96,20 @@ export default function App() {
     if (preAuth > walletBalance) return showNotification("Insufficient balance.");
     setWalletBalance(p => p - preAuth);
     setActiveSession({ station: selectedStation!, mode, slotId, startTime: new Date(), status: 'charging', chargeLevel: 20, cost: 0, preAuthAmount: preAuth, durationLimit: duration, timeElapsed: 0, isLocked: true });
-    sendCommand('L');
+    sendCommand('LOCK');
     setView('charging');
   };
 
   const toggleLock = async () => {
     if (!activeSession) return;
     const next = !activeSession.isLocked;
-    await sendCommand(next ? 'L' : 'U');
+    await sendCommand(next ? 'LOCK' : 'UNLOCK');
     setActiveSession(prev => prev ? ({ ...prev, isLocked: next }) : null);
   };
 
   const endSession = (cur = activeSession) => {
     if (!cur) return;
-    sendCommand('U');
+    sendCommand('UNLOCK');
     setWalletBalance(p => p + (cur.preAuthAmount - cur.cost));
     setReceipt({ stationName: cur.station.name, date: new Date().toLocaleString(), duration: "Session ended", totalEnergy: "2.1kWh", mode: cur.mode, cost: cur.cost, paid: cur.preAuthAmount, refund: cur.preAuthAmount - cur.cost });
     setActiveSession(null);
@@ -121,7 +146,6 @@ export default function App() {
           
           {view === 'profile' && (
             <div className="p-6 flex flex-col items-center max-w-md mx-auto animate-slide-up pb-44">
-              {/* User Identity Section */}
               <div className="w-full bg-white p-8 rounded-[3rem] shadow-sm border border-gray-100 flex flex-col items-center text-center">
                   <div className="relative mb-6">
                     <div className="w-24 h-24 bg-emerald-50 rounded-full flex items-center justify-center border-4 border-white shadow-lg overflow-hidden">
@@ -131,68 +155,71 @@ export default function App() {
                         <CheckCircle2 size={14} />
                     </div>
                   </div>
-                  
                   <h2 className="text-2xl font-black tracking-tighter text-gray-900">Ilhammencez</h2>
                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">UTP Student • ID: 22003814</p>
               </div>
 
-              {/* REAL-TIME STATUS DISPLAY */}
+              {/* CLOUD CONFIGURATION */}
               <div className="w-full mt-4 bg-slate-900 rounded-[3rem] p-8 shadow-2xl relative overflow-hidden border border-slate-800">
-                <div className="absolute -right-8 -top-8 opacity-10">
-                   {isHardwareOnline ? <Wifi size={160} /> : <WifiOff size={160} />}
-                </div>
-
-                <div className="relative z-10 flex flex-col gap-6">
+                <div className="relative z-10 flex flex-col gap-5">
                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-white font-black text-sm uppercase tracking-wider">Hardware Link</h3>
-                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Village 3C • Group 17</p>
+                      <div className="flex items-center gap-2">
+                        <Globe size={16} className="text-emerald-400" />
+                        <h3 className="text-white font-black text-xs uppercase tracking-wider">Cloud Bridge</h3>
                       </div>
-                      <div className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-2 ${isHardwareOnline ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
-                        <div className={`w-1.5 h-1.5 rounded-full ${isHardwareOnline ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}`}></div>
-                        {isHardwareOnline ? 'Connected' : 'Disconnected'}
+                      <div className={`px-4 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${isHardwareOnline ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
+                        {isHardwareOnline ? 'Online' : 'Not Connected'}
                       </div>
                    </div>
 
-                   <div className="bg-white/5 rounded-[2rem] p-5 border border-white/5 flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className={`p-3 rounded-2xl ${isHardwareOnline ? 'bg-emerald-500/10' : 'bg-rose-500/10'}`}>
-                           {isHardwareOnline ? <Activity size={20} className="text-emerald-400" /> : <ShieldAlert size={20} className="text-rose-400" />}
-                        </div>
-                        <div>
-                           <p className="text-[8px] font-black text-slate-500 uppercase">Hub Identity</p>
-                           <p className="text-xs font-black text-white">{stationId}</p>
+                   <div className="space-y-3">
+                      <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
+                        <p className="text-[8px] font-black text-slate-500 uppercase mb-2">Endpoint URL</p>
+                        <div className="flex items-center gap-2">
+                           <input 
+                              type="text" 
+                              value={cloudUrl} 
+                              onChange={(e) => setCloudUrl(e.target.value)}
+                              className="w-full bg-transparent text-white text-[10px] font-mono outline-none border-b border-white/10 pb-1 focus:border-emerald-500"
+                              placeholder="https://your-domain.vercel.app/api/status"
+                           />
                         </div>
                       </div>
-                      <button onClick={checkHardwareStatus} disabled={syncing} className="p-3 bg-white/10 hover:bg-white/20 text-white rounded-2xl transition-all">
-                        <RefreshCw size={18} className={syncing ? 'animate-spin' : ''} />
-                      </button>
+                      
+                      <div className="flex gap-2">
+                         <div className="flex-1 bg-white/5 rounded-2xl p-4 border border-white/5">
+                            <p className="text-[8px] font-black text-slate-500 uppercase mb-1">Hub Identifier</p>
+                            <p className="text-xs font-black text-white">{stationId}</p>
+                         </div>
+                         <button onClick={checkHardwareStatus} className="bg-emerald-600 px-6 rounded-2xl text-white shadow-lg active:scale-95 transition-all">
+                            <RefreshCw size={18} className={syncing ? 'animate-spin' : ''} />
+                         </button>
+                      </div>
                    </div>
-
-                   <button onClick={checkHardwareStatus} className="w-full bg-white text-slate-900 py-5 rounded-[2rem] font-black text-[11px] uppercase tracking-[0.2em] shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2">
-                      <Search size={14} /> Refresh Hardware Status
-                   </button>
+                   
+                   {!isHardwareOnline && (
+                     <div className="text-[9px] text-rose-300 font-bold bg-rose-500/10 p-4 rounded-2xl border border-rose-500/20 space-y-1">
+                        <p className="uppercase">⚠️ Deployment Required</p>
+                        <p className="font-medium opacity-80">The bridge endpoint was not found. Please click 'Apply Changes' to deploy the /api/status bridge.</p>
+                     </div>
+                   )}
                 </div>
               </div>
 
-              {/* Wallet Section */}
               <div className="w-full bg-white rounded-[3rem] p-8 border border-gray-100 mt-4 shadow-sm">
                  <div className="flex justify-between items-center mb-6">
                     <div>
                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Synergy Credits</p>
                        <h4 className="text-4xl font-black text-emerald-600 tracking-tighter">RM {walletBalance.toFixed(2)}</h4>
                     </div>
-                    <button onClick={() => setShowTopUpModal(true)} className="p-4 bg-emerald-50 text-emerald-600 rounded-3xl">
-                       <ZapIcon size={24} fill="currentColor" />
-                    </button>
+                    <button onClick={() => setShowTopUpModal(true)} className="p-4 bg-emerald-50 text-emerald-600 rounded-3xl"><ZapIcon size={24} fill="currentColor" /></button>
                  </div>
                  <button onClick={() => setShowTopUpModal(true)} className="w-full bg-gray-900 text-white py-5 rounded-[2.5rem] font-black text-xs uppercase tracking-widest shadow-xl">Top Up Wallet</button>
               </div>
 
-              {/* App Settings */}
               <div className="w-full mt-4 space-y-2">
                  {[
-                   { i: <Info size={18}/>, t: "Hardware Troubleshooting" },
+                   { i: <Info size={18}/>, t: "Bridge Troubleshooting" },
                    { i: <Settings2 size={18}/>, t: "App Preferences" }
                  ].map((item, i) => (
                    <button key={i} className="w-full bg-white p-5 rounded-[2rem] border border-gray-100 flex items-center justify-between text-gray-700">
