@@ -25,6 +25,7 @@ export default function App() {
   const [syncing, setSyncing] = useState(false);
   const [bridgeError, setBridgeError] = useState<string | null>(null);
   
+  // Use relative path for internal API
   const apiPath = '/api/status';
   const fullUrl = `${window.location.protocol}//${window.location.host}${apiPath}`;
   const [stationId, setStationId] = useState('ETP-G17-HUB');
@@ -39,32 +40,42 @@ export default function App() {
     setBridgeError(null);
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 6000);
+      const timeoutId = setTimeout(() => controller.abort(), 7000);
       
       const res = await fetch(apiPath, { 
         method: 'GET',
         cache: 'no-store',
+        mode: 'no-cors', // Helps avoid CORS issues in some mixed environments
         signal: controller.signal 
       });
+      
+      // Note: with no-cors, we might get an opaque response. 
+      // For status checking, a standard fetch is usually better.
+      const standardRes = await fetch(apiPath, { cache: 'no-store' });
       clearTimeout(timeoutId);
       
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (standardRes.status === 404) {
+        throw new Error("Bridge route not found (404). Deployment might still be propagating.");
+      }
+      
+      if (!standardRes.ok) throw new Error(`Server Error: ${standardRes.status}`);
 
-      const text = await res.text();
+      const text = await standardRes.text();
       const trimmedText = text.trim().toUpperCase();
 
+      // If text looks like HTML, the API didn't fire (SPA fallback)
       if (trimmedText.startsWith('<!DOCTYPE')) {
         setIsHardwareOnline(false);
-        setBridgeError("Server returned HTML instead of status. Check deployment.");
+        setBridgeError("The server returned HTML. Deployment issue detected.");
       } else if (trimmedText === 'LOCK' || trimmedText === 'UNLOCK') {
         setIsHardwareOnline(true);
       } else {
-        setIsHardwareOnline(true); // Treat as connected if 200 OK
+        setIsHardwareOnline(true);
       }
     } catch (e: any) {
-      console.error("Bridge link failure:", e);
+      console.error("Bridge failure:", e);
       setIsHardwareOnline(false);
-      setBridgeError(e.name === 'AbortError' ? "Request Timeout" : "Bridge Path Not Found");
+      setBridgeError(e.message || "Cloud Bridge Offline");
     } finally {
       setSyncing(false);
     }
@@ -72,7 +83,7 @@ export default function App() {
 
   useEffect(() => {
     checkHardwareStatus();
-    const interval = setInterval(checkHardwareStatus, 25000);
+    const interval = setInterval(checkHardwareStatus, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -84,12 +95,12 @@ export default function App() {
          body: JSON.stringify({ id: stationId, command })
        });
        if (res.ok) {
-         showNotification(`Cloud: ${command} Synced`);
+         showNotification(`Cloud: Hub ${command}ed`);
        } else {
-         showNotification("Bridge Sync Error");
+         showNotification(`Sync Error: ${res.status}`);
        }
      } catch (e) {
-       showNotification("Bridge Offline");
+       showNotification("Cloud Bridge Timeout");
      }
   };
 
@@ -174,23 +185,23 @@ export default function App() {
                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">UTP Student • ID: 22003814</p>
               </div>
 
-              {/* HARDWARE BRIDGE INTERFACE */}
+              {/* CLOUD BRIDGE CONFIG */}
               <div className="w-full mt-4 bg-slate-900 rounded-[3rem] p-8 shadow-2xl relative overflow-hidden border border-slate-800">
                 <div className="relative z-10 flex flex-col gap-5">
                    <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Globe size={16} className="text-emerald-400" />
-                        <h3 className="text-white font-black text-xs uppercase tracking-wider">Bridge Sync</h3>
+                        <h3 className="text-white font-black text-xs uppercase tracking-wider">Cloud Link</h3>
                       </div>
                       <div className={`px-4 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${isHardwareOnline ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
-                        {isHardwareOnline ? 'Linked' : 'Broken'}
+                        {isHardwareOnline ? 'Sync Active' : 'Offline'}
                       </div>
                    </div>
 
                    <div className="space-y-4">
                       <div className="bg-white/5 rounded-2xl p-5 border border-white/5">
                         <p className="text-[8px] font-black text-slate-500 uppercase mb-3 flex items-center gap-2">
-                          <Link size={10} /> Arduino API Link
+                          <Link size={10} /> ESP8266 Arduino Link
                         </p>
                         <div className="flex items-center gap-2 bg-black/40 p-3 rounded-xl border border-white/5">
                            <code className="flex-1 text-[9px] text-emerald-300 font-mono break-all overflow-hidden whitespace-nowrap overflow-ellipsis">
@@ -199,7 +210,7 @@ export default function App() {
                            <button 
                              onClick={() => {
                                navigator.clipboard.writeText(fullUrl);
-                               showNotification("Link Copied!");
+                               showNotification("URL Copied!");
                              }}
                              className="text-white/40 hover:text-white transition-colors"
                            >
@@ -211,7 +222,7 @@ export default function App() {
                       <div className="flex gap-2">
                          <div className="flex-1 bg-white/5 rounded-2xl p-4 border border-white/5">
                             <p className="text-[8px] font-black text-slate-500 uppercase mb-1">State</p>
-                            <p className="text-[10px] font-black text-white uppercase">{isHardwareOnline ? 'Online' : 'Reconnecting'}</p>
+                            <p className="text-[10px] font-black text-white uppercase">{isHardwareOnline ? 'Online' : 'Check Logs'}</p>
                          </div>
                          <button onClick={checkHardwareStatus} className="bg-emerald-600 px-6 rounded-2xl text-white shadow-lg active:scale-95 transition-all">
                             <RefreshCw size={18} className={syncing ? 'animate-spin' : ''} />
@@ -221,8 +232,8 @@ export default function App() {
                    
                    {!isHardwareOnline && (
                      <div className="text-[9px] text-rose-300 font-bold bg-rose-500/10 p-4 rounded-2xl border border-rose-500/20 space-y-1">
-                        <p className="uppercase">⚠️ Bridge Error</p>
-                        <p className="font-medium opacity-80 leading-relaxed">{bridgeError || "Ensure api/status.ts is deployed and public."}</p>
+                        <p className="uppercase">⚠️ Link Error</p>
+                        <p className="font-medium opacity-80 leading-relaxed">{bridgeError || "Server endpoint could not be reached."}</p>
                      </div>
                    )}
                 </div>
@@ -241,8 +252,8 @@ export default function App() {
 
               <div className="w-full mt-4 space-y-2">
                  {[
-                   { i: <Info size={18}/>, t: "ESP8266 Setup Guide" },
-                   { i: <Settings2 size={18}/>, t: "App Preferences" }
+                   { i: <Info size={18}/>, t: "ESP8266 Connection Guide" },
+                   { i: <Settings2 size={18}/>, t: "User Preferences" }
                  ].map((item, i) => (
                    <button key={i} className="w-full bg-white p-5 rounded-[2rem] border border-gray-100 flex items-center justify-between text-gray-700">
                       <div className="flex items-center gap-4">

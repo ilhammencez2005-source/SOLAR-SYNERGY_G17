@@ -1,5 +1,6 @@
 
 {
+  "version": 2,
   "rewrites": [
     {
       "source": "/api/:path*",
@@ -7,7 +8,7 @@
     },
     {
       "source": "/((?!api/).*)",
-      "destination": "/"
+      "destination": "/index.html"
     }
   ]
 }
