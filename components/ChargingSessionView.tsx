@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Zap, CheckCircle2, Lock, Unlock, Power, Loader2, Cpu } from 'lucide-react';
+import { Zap, CheckCircle2, Lock, Unlock, Power, Loader2, Cpu, ShieldCheck } from 'lucide-react';
 import { Session } from '../types';
 
 interface ChargingSessionViewProps {
@@ -19,7 +19,6 @@ export const ChargingSessionView: React.FC<ChargingSessionViewProps> = ({ active
 
   const handleLockClick = () => {
     setIsLocking(true);
-    // Simulate slight delay to match hardware response time
     setTimeout(() => {
       toggleLock();
       setIsLocking(false);
@@ -27,125 +26,107 @@ export const ChargingSessionView: React.FC<ChargingSessionViewProps> = ({ active
   };
 
   return (
-    <div className="w-full max-w-md mx-auto h-full flex flex-col justify-between p-6 animate-fade-in-down pb-8">
+    <div className="w-full max-w-md mx-auto h-full flex flex-col justify-between p-8 animate-fade-in-down pb-40">
       
-      {/* Header */}
-      <div className="flex justify-center items-center py-2 relative">
-         <div className="bg-white/80 backdrop-blur-md px-4 py-2 rounded-full border border-gray-100 shadow-sm flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${isCompleted ? 'bg-green-500' : 'bg-emerald-500 animate-pulse'}`}></div>
-            <span className="text-sm font-bold text-gray-700 uppercase tracking-wider">
-               {isCompleted ? "Session Complete" : "Live Session"}
+      {/* Dynamic Status Header */}
+      <div className="flex justify-between items-center py-2 relative">
+         <div className="bg-white/90 backdrop-blur-md px-5 py-2.5 rounded-full border border-gray-100 shadow-sm flex items-center gap-2">
+            <div className={`w-2.5 h-2.5 rounded-full ${isCompleted ? 'bg-green-500' : 'bg-emerald-500 animate-pulse'}`}></div>
+            <span className="text-[10px] font-black text-gray-800 uppercase tracking-[0.2em]">
+               {isCompleted ? "Fully Charged" : "Syncing Grid"}
             </span>
          </div>
          
-         {/* Hardware Status Tag */}
-         <div className={`absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tighter transition-all ${isHardwareConnected ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-gray-100 text-gray-400'}`}>
-            <Cpu size={12} className={isHardwareConnected ? 'animate-pulse' : ''} />
-            {isHardwareConnected ? 'Synced' : 'Offline'}
+         <div className={`flex items-center gap-2 px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${isHardwareConnected ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-gray-100 text-gray-400'}`}>
+            <ShieldCheck size={14} className={isHardwareConnected ? 'text-emerald-500' : ''} />
+            {isHardwareConnected ? 'Hub Secure' : 'Offline'}
          </div>
       </div>
 
-      {/* Main Circular Progress */}
-      <div className="flex-1 flex flex-col items-center justify-center relative my-4">
-         <div className="relative w-64 h-64 sm:w-72 sm:h-72 flex items-center justify-center">
-            {/* Background Ring */}
-            <svg className="w-full h-full transform -rotate-90 drop-shadow-xl">
-               <circle cx="50%" cy="50%" r="45%" stroke="currentColor" strokeWidth="16" fill="transparent" className="text-gray-100" />
+      {/* Progress Visualization */}
+      <div className="flex-1 flex flex-col items-center justify-center relative my-8">
+         <div className="relative w-72 h-72 sm:w-80 sm:h-80 flex items-center justify-center">
+            <svg className="w-full h-full transform -rotate-90 drop-shadow-2xl">
+               <circle cx="50%" cy="50%" r="45%" stroke="currentColor" strokeWidth="12" fill="transparent" className="text-gray-100" />
                <circle 
                   cx="50%" cy="50%" r="45%" 
                   stroke="currentColor" 
-                  strokeWidth="16" 
+                  strokeWidth="12" 
                   fill="transparent" 
-                  strokeDasharray={2 * Math.PI * 130} 
-                  strokeDashoffset={2 * Math.PI * 130 * ((100 - percentage) / 100)} 
-                  className={`${isCompleted ? "text-green-500" : activeSession.mode === 'fast' ? "text-yellow-500" : "text-emerald-500"} transition-all duration-700 ease-out`} 
+                  strokeDasharray="283%" 
+                  strokeDashoffset={`${283 - (283 * percentage) / 100}%`} 
+                  className={`${isCompleted ? "text-green-500" : activeSession.mode === 'fast' ? "text-yellow-500" : "text-emerald-500"} transition-all duration-1000 ease-in-out`} 
                   strokeLinecap="round" 
-                  style={{ strokeDasharray: '283%', strokeDashoffset: `${283 - (283 * percentage) / 100}%` }} 
                />
             </svg>
             
-            {/* Center Content */}
-            <div className="absolute flex flex-col items-center justify-center">
+            <div className="absolute flex flex-col items-center justify-center text-center">
                {isCompleted ? (
-                  <CheckCircle2 size={48} className="text-green-500 mb-2 animate-bounce" />
+                  <CheckCircle2 size={56} className="text-green-500 mb-2 animate-bounce" />
                ) : (
-                  <Zap size={48} className={`mb-2 ${activeSession.mode === 'fast' ? "text-yellow-500" : "text-emerald-500"} animate-pulse`} fill="currentColor" />
+                  <Zap size={56} className={`mb-2 ${activeSession.mode === 'fast' ? "text-yellow-500" : "text-emerald-500"} animate-pulse`} fill="currentColor" />
                )}
-               <div className="text-6xl font-black text-gray-800 tracking-tighter tabular-nums">
-                  {percentage}<span className="text-3xl align-top ml-1">%</span>
+               <div className="text-7xl font-black text-gray-900 tracking-tighter tabular-nums leading-none">
+                  {percentage}<span className="text-3xl align-top ml-1 opacity-40">%</span>
                </div>
-               <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">
-                  {activeSession.mode === 'fast' ? "Turbo" : "Eco"} Charging
+               <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mt-3">
+                  {activeSession.mode === 'fast' ? "Hyper" : "Solar"} Mode
                </span>
             </div>
          </div>
       </div>
 
-      {/* Stats & Actions */}
+      {/* Session Controls */}
       <div className="space-y-4 w-full">
          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center">
-               <span className="text-gray-400 text-[10px] font-bold uppercase mb-1">Time</span>
-               <span className="text-2xl font-mono font-bold text-gray-700">
+            <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col items-center">
+               <span className="text-gray-400 text-[9px] font-black uppercase tracking-widest mb-1">Elapsed</span>
+               <span className="text-2xl font-black text-gray-800 tracking-tighter">
                {Math.floor(activeSession.timeElapsed / 60)}:{(activeSession.timeElapsed % 60).toString().padStart(2, '0')}
                </span>
             </div>
-            <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center">
-               <span className="text-gray-400 text-[10px] font-bold uppercase mb-1">Cost</span>
-               <span className="text-2xl font-mono font-bold text-gray-800">
+            <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col items-center">
+               <span className="text-gray-400 text-[9px] font-black uppercase tracking-widest mb-1">Energy Cost</span>
+               <span className="text-2xl font-black text-emerald-600 tracking-tighter">
                   RM {activeSession.cost.toFixed(2)}
                </span>
             </div>
          </div>
 
-         {/* Lock Toggle */}
          {!isCompleted && (
             <button 
                onClick={handleLockClick}
                disabled={isLocking}
-               className={`w-full py-4 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all duration-300 relative overflow-hidden ${
+               className={`w-full py-6 rounded-[2.5rem] text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all duration-500 relative overflow-hidden shadow-xl ${
                   activeSession.isLocked 
-                  ? 'bg-slate-900 text-white hover:bg-black' 
-                  : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 shadow-inner'
-               } ${isLocking ? 'cursor-wait scale-[0.98]' : 'active:scale-95'}`}
+                  ? 'bg-slate-900 text-white shadow-slate-200' 
+                  : 'bg-emerald-50 text-emerald-600 shadow-emerald-50'
+               } ${isLocking ? 'cursor-wait opacity-80' : 'active:scale-95'}`}
             >
-               {isLocking && (
-                   <span className="absolute inset-0 bg-white/10 animate-pulse"></span>
+               {isLocking ? (
+                 <Loader2 size={20} className="animate-spin" />
+               ) : (
+                 activeSession.isLocked ? <Lock size={20} className="text-emerald-400" /> : <Unlock size={20} className="text-emerald-500" />
                )}
-               
-               <div className={`transition-transform duration-300 ${isLocking ? 'scale-110' : ''} flex items-center gap-2`}>
-                   {isLocking ? (
-                     <Loader2 size={18} className="animate-spin" />
-                   ) : (
-                     activeSession.isLocked ? <Lock size={18} className="text-red-400" /> : <Unlock size={18} className="text-emerald-500" />
-                   )}
-                   {isLocking 
-                     ? (activeSession.isLocked ? "Unlocking Dock..." : "Locking Dock...") 
-                     : (activeSession.isLocked ? "Unlock Dock (Servo)" : "Lock Dock (Servo)")
-                   }
-               </div>
+               {isLocking 
+                 ? (activeSession.isLocked ? "Unlocking Hub..." : "Securing Hub...") 
+                 : (activeSession.isLocked ? "Release Smart Dock" : "Secure Smart Dock")
+               }
             </button>
          )}
 
-         {/* Stop Button Area */}
          <div className="pt-2">
-             {isCompleted ? (
-                <button 
-                  onClick={endSession} 
-                  className="w-full bg-emerald-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-emerald-200 hover:bg-emerald-700 transition-all transform active:scale-95 flex items-center justify-center gap-2"
-                >
-                  <CheckCircle2 size={24} />
-                  FINISH SESSION
-                </button>
-             ) : (
-               <button 
-                  onClick={endSession}
-                  className="w-full bg-red-500 hover:bg-red-600 text-white rounded-2xl py-4 font-bold shadow-lg shadow-red-200 transition-all active:scale-95 flex items-center justify-center gap-3"
-               >
-                  <Power size={24} />
-                  STOP CHARGING
-               </button>
-             )}
+             <button 
+                onClick={endSession} 
+                className={`w-full py-6 rounded-[2.5rem] font-black text-xs uppercase tracking-[0.3em] shadow-2xl transition-all transform active:scale-95 flex items-center justify-center gap-3 ${
+                   isCompleted 
+                   ? 'bg-emerald-600 text-white shadow-emerald-100' 
+                   : 'bg-rose-500 text-white shadow-rose-100'
+                }`}
+             >
+                {isCompleted ? <CheckCircle2 size={24} /> : <Power size={24} />}
+                {isCompleted ? "CLOSE SESSION" : "ABORT CHARGING"}
+             </button>
          </div>
       </div>
     </div>
