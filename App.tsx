@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { User, CheckCircle2, Wifi, Search, Activity, RefreshCw, Zap as ZapIcon, Info, Settings2, AlertTriangle, ArrowRight, WifiOff, ShieldAlert, Globe, Link } from 'lucide-react';
+import { User, CheckCircle2, Wifi, Search, Activity, RefreshCw, Zap as ZapIcon, Info, Settings2, AlertTriangle, ArrowRight, WifiOff, ShieldAlert, Globe, Link, Copy, ExternalLink } from 'lucide-react';
 import { Header } from './components/Header';
 import { NavigationBar } from './components/NavigationBar';
 import { HomeView } from './components/HomeView';
@@ -23,8 +23,12 @@ export default function App() {
   // HARDWARE CONFIGURATION
   const [isHardwareOnline, setIsHardwareOnline] = useState(false);
   const [syncing, setSyncing] = useState(false);
-  // UPDATED: Automatically uses your actual Vercel URL
-  const [cloudUrl, setCloudUrl] = useState(`https://${window.location.hostname}/api/status`);
+  const [bridgeError, setBridgeError] = useState<string | null>(null);
+  
+  // Internal API path
+  const apiPath = '/api/status';
+  // Full URL for display (Arduino)
+  const fullUrl = `${window.location.protocol}//${window.location.host}${apiPath}`;
   const [stationId, setStationId] = useState('ETP-G17-HUB');
 
   const showNotification = (msg: string) => {
@@ -34,22 +38,40 @@ export default function App() {
 
   const checkHardwareStatus = async () => {
     setSyncing(true);
+    setBridgeError(null);
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
       
-      const res = await fetch(cloudUrl, { signal: controller.signal });
+      const res = await fetch(apiPath, { 
+        method: 'GET',
+        cache: 'no-store',
+        signal: controller.signal 
+      });
       clearTimeout(timeoutId);
       
-      if (res.ok) {
-        setIsHardwareOnline(true);
-        // showNotification("Cloud Bridge Active ⚡️");
-      } else {
-        throw new Error();
+      if (!res.ok) {
+        throw new Error(`Server returned status ${res.status}`);
       }
-    } catch (e) {
+
+      const contentType = res.headers.get('content-type') || '';
+      const text = await res.text();
+      
+      // If we get HTML, the rewrite is sending us the App instead of the API
+      if (text.trim().toLowerCase().startsWith('<!doctype html>')) {
+        console.error("Bridge Error: Received HTML. Rewrites might be misconfigured.");
+        setBridgeError("Endpoint returning HTML instead of status. Check vercel.json.");
+        setIsHardwareOnline(false);
+      } else if (text.trim() === 'LOCK' || text.trim() === 'UNLOCK') {
+        setIsHardwareOnline(true);
+      } else {
+        console.warn("Bridge responded with unexpected text:", text);
+        setIsHardwareOnline(true); // Still treat as online if it's a valid 200 non-HTML
+      }
+    } catch (e: any) {
+      console.error("Bridge check failed:", e);
       setIsHardwareOnline(false);
-      console.error("Bridge check failed. Check if /api/status exists.");
+      setBridgeError(e.name === 'AbortError' ? "Connection Timeout" : "Bridge Endpoint Not Found");
     } finally {
       setSyncing(false);
     }
@@ -57,24 +79,25 @@ export default function App() {
 
   useEffect(() => {
     checkHardwareStatus();
-    // Check every 10 seconds to keep the status updated
-    const interval = setInterval(checkHardwareStatus, 10000);
+    const interval = setInterval(checkHardwareStatus, 30000); // Check every 30s
     return () => clearInterval(interval);
-  }, [cloudUrl]);
+  }, []);
 
   const sendCommand = async (command: 'UNLOCK' | 'LOCK') => {
      try {
-       const res = await fetch(cloudUrl, {
+       const res = await fetch(apiPath, {
          method: 'POST',
          headers: { 'Content-Type': 'application/json' },
          body: JSON.stringify({ id: stationId, command })
        });
        if (res.ok) {
-         console.log(`Command ${command} sent successfully`);
+         showNotification(`Cloud: ${command} Command Sent`);
+       } else {
+         showNotification("Bridge Sync Failed");
        }
      } catch (e) {
-       console.error("Failed to send command to hardware bridge.");
-       showNotification("Bridge Error: Command not sent");
+       console.error("Failed to send command.");
+       showNotification("Bridge Offline");
      }
   };
 
@@ -159,37 +182,44 @@ export default function App() {
                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">UTP Student • ID: 22003814</p>
               </div>
 
-              {/* CLOUD CONFIGURATION */}
+              {/* HARDWARE BRIDGE INTERFACE */}
               <div className="w-full mt-4 bg-slate-900 rounded-[3rem] p-8 shadow-2xl relative overflow-hidden border border-slate-800">
                 <div className="relative z-10 flex flex-col gap-5">
                    <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Globe size={16} className="text-emerald-400" />
-                        <h3 className="text-white font-black text-xs uppercase tracking-wider">Cloud Bridge</h3>
+                        <h3 className="text-white font-black text-xs uppercase tracking-wider">Bridge Status</h3>
                       </div>
                       <div className={`px-4 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${isHardwareOnline ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
-                        {isHardwareOnline ? 'Online' : 'Not Connected'}
+                        {isHardwareOnline ? 'System Linked' : 'Link Broken'}
                       </div>
                    </div>
 
-                   <div className="space-y-3">
-                      <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
-                        <p className="text-[8px] font-black text-slate-500 uppercase mb-2">Endpoint URL</p>
-                        <div className="flex items-center gap-2">
-                           <input 
-                              type="text" 
-                              value={cloudUrl} 
-                              onChange={(e) => setCloudUrl(e.target.value)}
-                              className="w-full bg-transparent text-white text-[10px] font-mono outline-none border-b border-white/10 pb-1 focus:border-emerald-500"
-                              placeholder="https://your-domain.vercel.app/api/status"
-                           />
+                   <div className="space-y-4">
+                      <div className="bg-white/5 rounded-2xl p-5 border border-white/5">
+                        <p className="text-[8px] font-black text-slate-500 uppercase mb-3 flex items-center gap-2">
+                          <Link size={10} /> Arduino IDE Config
+                        </p>
+                        <div className="flex items-center gap-2 bg-black/40 p-3 rounded-xl border border-white/5">
+                           <code className="flex-1 text-[9px] text-emerald-300 font-mono break-all overflow-hidden whitespace-nowrap overflow-ellipsis">
+                              {fullUrl}
+                           </code>
+                           <button 
+                             onClick={() => {
+                               navigator.clipboard.writeText(fullUrl);
+                               showNotification("Link Copied!");
+                             }}
+                             className="text-white/40 hover:text-white transition-colors"
+                           >
+                             <Copy size={14} />
+                           </button>
                         </div>
                       </div>
                       
                       <div className="flex gap-2">
                          <div className="flex-1 bg-white/5 rounded-2xl p-4 border border-white/5">
-                            <p className="text-[8px] font-black text-slate-500 uppercase mb-1">Hub Identifier</p>
-                            <p className="text-xs font-black text-white">{stationId}</p>
+                            <p className="text-[8px] font-black text-slate-500 uppercase mb-1">State</p>
+                            <p className="text-[10px] font-black text-white uppercase">{isHardwareOnline ? 'Ready for Hub' : 'Checking...'}</p>
                          </div>
                          <button onClick={checkHardwareStatus} className="bg-emerald-600 px-6 rounded-2xl text-white shadow-lg active:scale-95 transition-all">
                             <RefreshCw size={18} className={syncing ? 'animate-spin' : ''} />
@@ -199,8 +229,8 @@ export default function App() {
                    
                    {!isHardwareOnline && (
                      <div className="text-[9px] text-rose-300 font-bold bg-rose-500/10 p-4 rounded-2xl border border-rose-500/20 space-y-1">
-                        <p className="uppercase">⚠️ Deployment Required</p>
-                        <p className="font-medium opacity-80">The bridge endpoint was not found. Please click 'Apply Changes' to deploy the /api/status bridge.</p>
+                        <p className="uppercase">⚠️ Bridge Check Failed</p>
+                        <p className="font-medium opacity-80 leading-relaxed">{bridgeError || "Could not reach the status endpoint. Ensure the file 'api/status.ts' exists and you have deployed."}</p>
                      </div>
                    )}
                 </div>
@@ -219,7 +249,7 @@ export default function App() {
 
               <div className="w-full mt-4 space-y-2">
                  {[
-                   { i: <Info size={18}/>, t: "Bridge Troubleshooting" },
+                   { i: <Info size={18}/>, t: "ESP8266 Setup Guide" },
                    { i: <Settings2 size={18}/>, t: "App Preferences" }
                  ].map((item, i) => (
                    <button key={i} className="w-full bg-white p-5 rounded-[2rem] border border-gray-100 flex items-center justify-between text-gray-700">
