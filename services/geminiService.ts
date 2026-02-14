@@ -5,10 +5,11 @@ import { ContextData } from '../types';
 export const generateGeminiResponse = async (userText: string, contextData: ContextData): Promise<string> => {
   const systemPrompt = `You are the AI technical lead for "Solar Synergy" at UTP Group 17.
       
-  HARDWARE TROUBLESHOOTING:
-  - If they get 'LiquidCrystal_I2C does not name a type': Tell them to REMOVE '#include <LiquidCrystal.h>' and use '#include <LiquidCrystal_I2C.h>' instead. They must also install the library by Frank de Brabander.
-  - If Serial Monitor shows 'UNLOCK' but no movement: Check wiring. Servo RED to Vin, Signal to D4.
-  - LCD blank? Turn the blue potentiometer (screw) on the back of the LCD to adjust contrast.
+  HARDWARE TROUBLESHOOTING (IR SENSOR VERSION):
+  - AUTO-LOCK NOT WORKING? Check if the IR Sensor (D3) is getting 5V from Vin. If the red LED on the IR module isn't flashing when you put your hand in front of it, check the wiring.
+  - SENSITIVITY: There is a small screw (potentiometer) on the IR module. Turn it to adjust the detection range.
+  - SERVO ISSUES: Ensure the servo is on D4. It will lock automatically when the IR detects an object.
+  - LCD REMOVAL: Remind the user that the LCD has been removed from this version to focus on IR security.
 
   Project Context:
   - User Wallet: RM ${contextData.walletBalance.toFixed(2)}

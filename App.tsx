@@ -109,111 +109,78 @@ export default function App() {
     setActiveSession(null); setSelectedStation(null); setView('home');
   };
 
-  const arduinoSnippet = `// --- SOLAR SYNERGY: SMART HUB FIRMWARE ---
-// MANDATORY: Remove "#include <LiquidCrystal.h>" if it exists at the top.
-// MANDATORY: Install "LiquidCrystal I2C" by Frank de Brabander in Library Manager.
+  const arduinoSnippet = `// --- SOLAR SYNERGY: SMART HUB FIRMWARE (IR SENSOR VERSION) ---
+// 1. IR Sensor: Connect Signal to D3. (Detects scooter = LOW)
+// 2. Servo: Connect Signal to D4. (Locked = 0, Unlocked = 180)
+// 3. Logic: If IR detects an object, it AUTO-LOCKS for security.
 
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 #include <WiFiClientSecure.h>
 #include <Servo.h>
-#include <Wire.h> 
-#include <LiquidCrystal_I2C.h> // Correct library for I2C LCD
 
-// 1. SETTINGS & LCD INIT (Address 0x27 is standard for I2C LCDs)
-LiquidCrystal_I2C lcd(0x27, 16, 2);
 const char* ssid = "E91585-Maxis_Fibre";
 const char* pass = "Ilhean2011";
 const char* bridgeUrl = "${fullUrl}";
 
-// 2. SERVO INIT
 Servo myServo;
-const int servoPin = D4; // Signal pin (GPIO 2)
+const int servoPin = D4; 
+const int irPin = D3; // Infrared Sensor Input
 
 void setup() {
   Serial.begin(115200);
   
-  // Start LCD
-  lcd.init();
-  lcd.backlight();
-  lcd.setCursor(0, 0);
-  lcd.print("SOLAR SYNERGY");
-  lcd.setCursor(0, 1);
-  lcd.print("STARTING...");
-
-  // Start Servo & Test Sweep
+  pinMode(irPin, INPUT);
   myServo.attach(servoPin);
-  myServo.write(180); // Open position
-  delay(600);
-  myServo.write(0);   // Closed position
-  delay(600);
   
-  // Connect WiFi
+  // Initial position: Start Locked for safety
+  myServo.write(0); 
+  
   WiFi.begin(ssid, pass);
-  lcd.clear();
-  lcd.print("CONNECTING...");
+  Serial.println("Connecting to WiFi...");
   
-  int retryCount = 0;
-  while (WiFi.status() != WL_CONNECTED && retryCount < 20) {
+  while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
-    lcd.setCursor(retryCount % 16, 1);
-    lcd.print(".");
-    retryCount++;
   }
-
-  // Ready Screen
-  lcd.clear();
-  lcd.print("SYSTEM ONLINE");
-  lcd.setCursor(0, 1);
-  lcd.print("READY TO SCAN");
+  Serial.println("\nSystem Online!");
 }
 
 void loop() {
+  // --- 1. LOCAL AUTO-LOCK LOGIC (IR SENSOR) ---
+  int irStatus = digitalRead(irPin);
+  
+  if (irStatus == LOW) { // Scooter Detected!
+    myServo.write(0);   // LOCK IMMEDIATELY
+    Serial.println("AUTO-LOCK: SCOOTER DETECTED");
+  }
+
+  // --- 2. CLOUD COMMAND LOGIC (BRIDGE) ---
   if (WiFi.status() == WL_CONNECTED) {
     WiFiClientSecure client;
-    client.setInsecure(); // Required for Vercel HTTPS
+    client.setInsecure();
     HTTPClient http;
     
     if (http.begin(client, bridgeUrl)) {
-      int httpCode = http.GET();
-      if (httpCode == 200) {
-        String payload = http.getString();
-        payload.trim(); 
+      int code = http.GET();
+      if (code == 200) {
+        String res = http.getString();
+        res.trim();
         
-        if (payload == "UNLOCK") {
-          myServo.write(180); // Move Servo to Open
-          updateLCD("UNLOCKED", "VILLAGE 3C HUB");
-        } 
-        else if (payload == "LOCK") {
-          myServo.write(0);   // Move Servo to Locked
-          updateLCD("LOCKED", "CHARGING ACTIVE");
+        // Manual command from app
+        if (res == "UNLOCK") {
+          myServo.write(180); 
+        } else if (res == "LOCK") {
+          myServo.write(0);
         }
       }
       http.end();
     }
-  } else {
-    WiFi.begin(ssid, pass);
-    lcd.setCursor(0, 1);
-    lcd.print("RECONNECTING...");
   }
   
-  delay(3000); // Polling interval
+  delay(1000); 
 }
-
-void updateLCD(String status, String line2) {
-  static String lastStatus = "";
-  if (status == lastStatus) return; // Prevent flickering
-  
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("STATUS: " + status);
-  lcd.setCursor(0, 1);
-  lcd.print(line2);
-  
-  Serial.println("HUB CHANGE: " + status);
-  lastStatus = status;
-}`;
+`;
 
   return (
     <div className="flex flex-col h-screen w-full bg-gray-50 text-gray-900 font-sans overflow-hidden">
@@ -306,7 +273,7 @@ void updateLCD(String status, String line2) {
                  <pre className="flex-1 bg-black/50 p-6 rounded-2xl border border-white/5 overflow-auto text-[10px] text-emerald-300 font-mono leading-relaxed">
                    {arduinoSnippet}
                  </pre>
-                 <button onClick={() => { navigator.clipboard.writeText(arduinoSnippet); showNotification("Code Copied!"); }} className="mt-6 w-full bg-emerald-600 text-white py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-emerald-900/20">Copy To Clipboard</button>
+                 <button onClick={() => { navigator.clipboard.writeText(arduinoSnippet); showNotification("Code copied!"); }} className="mt-6 w-full bg-emerald-600 text-white py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-emerald-900/20">Copy To Clipboard</button>
               </div>
            </div>
         )}

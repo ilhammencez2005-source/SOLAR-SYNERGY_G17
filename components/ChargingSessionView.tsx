@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Zap, CheckCircle2, Lock, Unlock, Power, Loader2, Cpu, ShieldCheck } from 'lucide-react';
+import { Zap, CheckCircle2, Lock, Unlock, Power, Loader2, Cpu, ShieldCheck, Eye } from 'lucide-react';
 import { Session } from '../types';
 
 interface ChargingSessionViewProps {
@@ -38,8 +38,8 @@ export const ChargingSessionView: React.FC<ChargingSessionViewProps> = ({ active
          </div>
          
          <div className={`flex items-center gap-2 px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${isHardwareConnected ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-gray-100 text-gray-400'}`}>
-            <ShieldCheck size={14} className={isHardwareConnected ? 'text-emerald-500' : ''} />
-            {isHardwareConnected ? 'Bridge Active' : 'Offline'}
+            <Eye size={14} className={isHardwareConnected ? 'text-emerald-500' : ''} />
+            {isHardwareConnected ? 'IR Detection On' : 'Sensors Off'}
          </div>
       </div>
 
@@ -110,9 +110,9 @@ export const ChargingSessionView: React.FC<ChargingSessionViewProps> = ({ active
                )}
                <div className="flex flex-col items-start leading-none">
                   <span className="text-[10px] font-black">
-                     {isLocking ? (activeSession.isLocked ? "Unlocking Hub..." : "Locking Hub...") : (activeSession.isLocked ? "DOCKED & SECURED" : "RELEASE DOCK")}
+                     {isLocking ? (activeSession.isLocked ? "Unlocking..." : "Securing...") : (activeSession.isLocked ? "DOCKED & SECURED" : "RELEASE DOCK")}
                   </span>
-                  {!isLocking && <span className="text-[7px] font-black opacity-50 mt-1 uppercase tracking-widest">Automation Active</span>}
+                  {!isLocking && <span className="text-[7px] font-black opacity-50 mt-1 uppercase tracking-widest">IR Auto-Lock Active</span>}
                </div>
             </button>
          )}
@@ -130,7 +130,7 @@ export const ChargingSessionView: React.FC<ChargingSessionViewProps> = ({ active
                 {isCompleted ? "CLOSE SESSION" : "ABORT CHARGING"}
              </button>
          </div>
-         {!isCompleted && <p className="text-center text-[8px] font-black text-gray-400 uppercase tracking-widest">System will Auto-Unlock on completion</p>}
+         {!isCompleted && <p className="text-center text-[8px] font-black text-gray-400 uppercase tracking-widest">Servo will Auto-Lock when scooter enters</p>}
       </div>
     </div>
   );
