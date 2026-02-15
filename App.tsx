@@ -20,6 +20,7 @@ export default function App() {
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null); 
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [chargingHistory, setChargingHistory] = useState<ChargingHistoryItem[]>([]);
+  const [cloudState, setCloudState] = useState<string>("LOCK");
   
   const [isPrebookFlow, setIsPrebookFlow] = useState(false);
   const [prebookCountdown, setPrebookCountdown] = useState<number | null>(null);
@@ -32,8 +33,22 @@ export default function App() {
     setTimeout(() => setNotification(null), 3500);
   };
 
-  const sendCommand = async (command: 'UNLOCK' | 'LOCK') => {
-     console.log(`[HARDWARE] Attempting command: ${command}`);
+  // CHECK SERVER STATE (What the Arduino actually sees)
+  const syncWithCloud = async () => {
+    try {
+      const res = await fetch(`${apiPath}?t=${Date.now()}`); // Cache buster
+      if (res.ok) {
+        const text = await res.text();
+        const serverStatus = text.trim().toUpperCase();
+        setCloudState(serverStatus);
+      }
+    } catch (e) {
+      console.warn("Cloud sync warning:", e);
+    }
+  };
+
+  const sendCommandToBridge = async (command: 'UNLOCK' | 'LOCK') => {
+     console.log(`[HARDWARE] Requesting ${command}...`);
      try {
        const res = await fetch(`${apiPath}?cb=${Date.now()}`, {
          method: 'POST',
@@ -42,13 +57,24 @@ export default function App() {
        });
        if (res.ok) {
          const data = await res.json();
-         console.log(`[HARDWARE] Confirmed state: ${data.newState}`);
+         setCloudState(data.state);
+         console.log(`[HARDWARE] Cloud successfully updated to: ${data.state}`);
        }
      } catch (e) {
-       console.error("Hardware Sync Error:", e);
-       showNotification("HUB OFFLINE");
+       console.error("Critical Cloud Bridge Error:", e);
+       showNotification("BRIDGE DISCONNECTED");
      }
   };
+
+  // Poll cloud state while charging view is active
+  useEffect(() => {
+    let poller: any;
+    if (activeSession) {
+      syncWithCloud();
+      poller = setInterval(syncWithCloud, 2000); // Poll every 2 seconds
+    }
+    return () => clearInterval(poller);
+  }, [activeSession]);
 
   useEffect(() => {
     if ("geolocation" in navigator) {
@@ -96,29 +122,36 @@ export default function App() {
 
   const executeStartCharging = (mode: ChargingMode, slotId: string, duration: number | 'full', preAuth: number) => {
     setWalletBalance(p => p - preAuth);
-    // When charging starts, physical hub should be LOCKED
+    // HUB starts in LOCKED mode
     setActiveSession({ 
       station: selectedStation!, 
       mode, slotId, startTime: new Date(), status: 'charging', chargeLevel: 24, cost: 0, preAuthAmount: preAuth, durationLimit: duration, timeElapsed: 0, 
       isLocked: true 
     });
-    sendCommand('LOCK');
+    sendCommandToBridge('LOCK');
     setView('charging');
     setIsPrebookFlow(false);
   };
 
   const toggleLock = async () => {
     if (!activeSession) return;
-    // IF currently Locked (true), we want to UNLOCK. IF Unlocked (false), we want to LOCK.
-    const command = activeSession.isLocked ? 'UNLOCK' : 'LOCK';
-    await sendCommand(command);
+    
+    // CURRENT STATE -> TARGET COMMAND
+    // If locked (true) -> We want to UNLOCK
+    // If unlocked (false) -> We want to LOCK
+    const nextCommand = activeSession.isLocked ? 'UNLOCK' : 'LOCK';
+    
+    // UI Update immediately
     setActiveSession(prev => prev ? { ...prev, isLocked: !prev.isLocked } : null);
-    showNotification(`Hub ${command}ed`);
+    
+    // Server Sync
+    await sendCommandToBridge(nextCommand);
+    showNotification(`${nextCommand} Command Sent`);
   };
 
   const endSession = (cur = activeSession) => {
     if (!cur) return;
-    sendCommand('UNLOCK'); 
+    sendCommandToBridge('UNLOCK'); // Always unlock on finish
     const refund = cur.preAuthAmount - cur.cost;
     const energy = cur.cost > 0 ? cur.cost / 1.2 : 4.5; 
     setWalletBalance(p => p + refund);
@@ -166,7 +199,15 @@ export default function App() {
             <BookingView selectedStation={selectedStation} onBack={() => { setView('home'); setSelectedStation(null); }} onStartCharging={startCharging} isPrebook={isPrebookFlow} />
           )}
 
-          {view === 'charging' && <ChargingSessionView activeSession={activeSession} toggleLock={toggleLock} endSession={() => endSession()} isHardwareConnected={true} />}
+          {view === 'charging' && (
+            <ChargingSessionView 
+              activeSession={activeSession} 
+              toggleLock={toggleLock} 
+              endSession={() => endSession()} 
+              isHardwareConnected={true} 
+              cloudState={cloudState}
+            />
+          )}
           {view === 'history' && <HistoryView history={chargingHistory} onClearHistory={() => setChargingHistory([])} />}
           {view === 'profile' && <div className="p-8 text-center font-black uppercase text-gray-400">Profile View</div>}
           {view === 'assistant' && <GeminiAssistant onClose={() => setView('home')} contextData={{ walletBalance, selectedStation }} />}
