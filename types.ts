@@ -64,7 +64,7 @@ export interface Receipt {
   refund: number;
 }
 
-export type ViewState = 'home' | 'booking' | 'charging' | 'assistant' | 'profile';
+export type ViewState = 'home' | 'booking' | 'charging' | 'assistant' | 'profile' | 'history';
 
 export interface ContextData {
   walletBalance: number;

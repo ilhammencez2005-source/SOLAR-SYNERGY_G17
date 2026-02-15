@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { MapPin, Sparkles, Zap } from 'lucide-react';
+import { MapPin, Sparkles, Zap, History, User } from 'lucide-react';
 import { ViewState } from '../types';
 
 interface NavigationBarProps {
@@ -10,34 +11,50 @@ interface NavigationBarProps {
 }
 
 export const NavigationBar: React.FC<NavigationBarProps> = ({ view, setView, hasActiveSession, showNotification }) => (
-  <div className="px-6 py-4 flex justify-between items-center pb-safe w-full">
+  <div className="px-4 py-4 flex justify-between items-center pb-safe w-full bg-white/80 backdrop-blur-md border-t border-gray-100 shadow-[0_-1px_10px_rgba(0,0,0,0.02)]">
     <button 
       onClick={() => setView('home')} 
-      className={`flex flex-col items-center gap-1.5 transition-colors hover:bg-gray-50 px-4 py-2 rounded-xl ${view === 'home' || view === 'booking' ? 'text-emerald-600' : 'text-gray-400 hover:text-gray-600'}`}
+      className={`flex flex-col items-center gap-1.5 transition-all active:scale-90 px-3 py-1 rounded-xl ${view === 'home' || view === 'booking' ? 'text-emerald-600' : 'text-gray-400'}`}
     >
-      <MapPin size={24} />
-      <span className="text-[10px] font-bold uppercase tracking-wide">Stations</span>
+      <MapPin size={22} strokeWidth={view === 'home' ? 3 : 2} />
+      <span className="text-[8px] font-black uppercase tracking-wider">Hubs</span>
     </button>
 
-    <div className="relative -top-8">
+    <button 
+      onClick={() => setView('history')} 
+      className={`flex flex-col items-center gap-1.5 transition-all active:scale-90 px-3 py-1 rounded-xl ${view === 'history' ? 'text-emerald-600' : 'text-gray-400'}`}
+    >
+      <History size={22} strokeWidth={view === 'history' ? 3 : 2} />
+      <span className="text-[8px] font-black uppercase tracking-wider">History</span>
+    </button>
+
+    <div className="relative -top-8 px-2">
       <button 
         onClick={() => setView('assistant')}
-        className={`w-16 h-16 rounded-full shadow-xl flex items-center justify-center border-4 border-gray-50 transition-transform active:scale-95 ${
+        className={`w-14 h-14 rounded-full shadow-2xl flex items-center justify-center border-4 border-white transition-all active:scale-90 ${
           view === 'assistant' 
-          ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white ring-4 ring-emerald-100' 
-          : 'bg-gradient-to-r from-yellow-400 to-orange-400 text-white hover:shadow-orange-200/50'
+          ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white' 
+          : 'bg-gradient-to-br from-gray-800 to-black text-white'
         }`}
       >
-        <Sparkles size={28} className={view === 'assistant' ? '' : 'animate-pulse'}/>
+        <Sparkles size={24} className={view === 'assistant' ? '' : 'animate-pulse text-emerald-400'}/>
       </button>
     </div>
 
     <button 
       onClick={() => hasActiveSession ? setView('charging') : showNotification("No active session")}
-      className={`flex flex-col items-center gap-1.5 transition-colors hover:bg-gray-50 px-4 py-2 rounded-xl ${view === 'charging' ? 'text-emerald-600' : 'text-gray-400 hover:text-gray-600'}`}
+      className={`flex flex-col items-center gap-1.5 transition-all active:scale-90 px-3 py-1 rounded-xl ${view === 'charging' ? 'text-emerald-600' : 'text-gray-400'}`}
     >
-      <Zap size={24} className={hasActiveSession ? "animate-pulse text-emerald-600" : ""} />
-      <span className="text-[10px] font-bold uppercase tracking-wide">Charge</span>
+      <Zap size={22} strokeWidth={view === 'charging' ? 3 : 2} className={hasActiveSession ? "animate-pulse text-emerald-600" : ""} />
+      <span className="text-[8px] font-black uppercase tracking-wider">Charge</span>
+    </button>
+
+    <button 
+      onClick={() => setView('profile')} 
+      className={`flex flex-col items-center gap-1.5 transition-all active:scale-90 px-3 py-1 rounded-xl ${view === 'profile' ? 'text-emerald-600' : 'text-gray-400'}`}
+    >
+      <User size={22} strokeWidth={view === 'profile' ? 3 : 2} />
+      <span className="text-[8px] font-black uppercase tracking-wider">Profile</span>
     </button>
   </div>
 );

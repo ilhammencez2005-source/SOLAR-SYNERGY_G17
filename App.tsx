@@ -7,6 +7,7 @@ import { HomeView } from './components/HomeView';
 import { BookingView } from './components/BookingView';
 import { ChargingSessionView } from './components/ChargingSessionView';
 import { GeminiAssistant } from './components/GeminiAssistant';
+import { HistoryView } from './components/HistoryView';
 import { STATIONS } from './constants';
 import { Station, Session, UserLocation, ViewState, ChargingMode, Receipt } from './types';
 
@@ -208,6 +209,10 @@ void loop() {
           {view === 'charging' && (
             <ChargingSessionView activeSession={activeSession} toggleLock={toggleLock} endSession={() => endSession()} isHardwareConnected={isHardwareOnline} />
           )}
+
+          {view === 'history' && (
+            <HistoryView />
+          )}
           
           {view === 'profile' && (
             <div className="p-6 flex flex-col items-center max-w-md mx-auto animate-slide-up pb-44">
@@ -250,12 +255,22 @@ void loop() {
                  <button onClick={() => setShowTopUpModal(true)} className="w-full bg-gray-900 text-white py-5 rounded-[2.5rem] font-black text-xs uppercase tracking-widest shadow-xl">Top Up Wallet</button>
               </div>
 
-              <button 
-                onClick={() => setShowArduinoCode(true)}
-                className="mt-12 text-[8px] font-black text-gray-300 uppercase tracking-[0.3em] hover:text-gray-400 transition-colors"
-              >
-                Dev: Source Code
-              </button>
+              <div className="w-full mt-4 grid grid-cols-2 gap-3">
+                <button 
+                  onClick={() => setView('history')}
+                  className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col items-center gap-2 group transition-all active:scale-95"
+                >
+                  <History className="text-emerald-600 group-hover:scale-110 transition-transform" />
+                  <span className="text-[10px] font-black uppercase tracking-widest">History</span>
+                </button>
+                <button 
+                   onClick={() => setShowArduinoCode(true)}
+                   className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col items-center gap-2 group transition-all active:scale-95"
+                >
+                   <Code2 className="text-slate-600 group-hover:scale-110 transition-transform" />
+                   <span className="text-[10px] font-black uppercase tracking-widest">Dev Tools</span>
+                </button>
+              </div>
             </div>
           )}
           {view === 'assistant' && <GeminiAssistant onClose={() => setView('home')} contextData={{ walletBalance, selectedStation }} />}
