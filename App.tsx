@@ -73,14 +73,18 @@ export default function App() {
   });
 
   const sendCommand = async (command: 'UNLOCK' | 'LOCK') => {
+     console.log(`Sending command: ${command}`);
      try {
-       await fetch(apiPath, {
+       const res = await fetch(apiPath, {
          method: 'POST',
          headers: { 'Content-Type': 'application/json' },
          body: JSON.stringify({ id: stationId, command })
        });
+       if (!res.ok) throw new Error("API responded with error");
+       console.log(`Command ${command} confirmed by bridge`);
      } catch (e) {
-       console.error("Bridge Connection Failed");
+       console.error("Bridge Connection Failed:", e);
+       showNotification("HUB SYNC ERROR");
      }
   };
 
@@ -140,6 +144,7 @@ export default function App() {
       timeElapsed: 0, 
       isLocked: true 
     });
+    // Immediately tell the bridge to LOCK the hub
     sendCommand('LOCK');
     setView('charging');
     setIsPrebookFlow(false);
@@ -156,10 +161,11 @@ export default function App() {
 
   const endSession = (cur = activeSession) => {
     if (!cur) return;
+    // Tell the bridge to UNLOCK before ending
     sendCommand('UNLOCK');
     const refund = cur.preAuthAmount - cur.cost;
     const actualCost = cur.cost;
-    const energyConsumed = cur.cost > 0 ? cur.cost / 1.2 : 4.5; // free mode uses mock energy
+    const energyConsumed = cur.cost > 0 ? cur.cost / 1.2 : 4.5; 
     setWalletBalance(p => p + refund);
     
     const historyItem: ChargingHistoryItem = {
