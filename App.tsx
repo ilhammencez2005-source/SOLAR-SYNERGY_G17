@@ -18,7 +18,6 @@ export default function App() {
   const [walletBalance, setWalletBalance] = useState(50.00);
   const [notification, setNotification] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null); 
-  const [showTopUpModal, setShowTopUpModal] = useState(false);
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [chargingHistory, setChargingHistory] = useState<ChargingHistoryItem[]>([]);
   
@@ -26,7 +25,6 @@ export default function App() {
   const [prebookCountdown, setPrebookCountdown] = useState<number | null>(null);
   const [pendingSessionData, setPendingSessionData] = useState<any>(null);
 
-  // Use the same bridge path
   const apiPath = '/api/status';
 
   const showNotification = (msg: string) => {
@@ -35,23 +33,20 @@ export default function App() {
   };
 
   const sendCommand = async (command: 'UNLOCK' | 'LOCK') => {
-     console.log(`[BRIDGE] Sending: ${command}`);
+     console.log(`[HARDWARE] Attempting command: ${command}`);
      try {
-       // Added a cache-busting query parameter to ensure the server always processes the POST
-       const res = await fetch(`${apiPath}?t=${Date.now()}`, {
+       const res = await fetch(`${apiPath}?cb=${Date.now()}`, {
          method: 'POST',
          headers: { 'Content-Type': 'application/json' },
          body: JSON.stringify({ command })
        });
        if (res.ok) {
          const data = await res.json();
-         console.log(`[BRIDGE] Confirmed server state: ${data.state}`);
-       } else {
-         throw new Error("Server error");
+         console.log(`[HARDWARE] Confirmed state: ${data.newState}`);
        }
      } catch (e) {
-       console.error("Hardware bridge error:", e);
-       showNotification("CONNECTION LOST");
+       console.error("Hardware Sync Error:", e);
+       showNotification("HUB OFFLINE");
      }
   };
 
@@ -101,26 +96,29 @@ export default function App() {
 
   const executeStartCharging = (mode: ChargingMode, slotId: string, duration: number | 'full', preAuth: number) => {
     setWalletBalance(p => p - preAuth);
+    // When charging starts, physical hub should be LOCKED
     setActiveSession({ 
       station: selectedStation!, 
-      mode, slotId, startTime: new Date(), status: 'charging', chargeLevel: 24, cost: 0, preAuthAmount: preAuth, durationLimit: duration, timeElapsed: 0, isLocked: false 
+      mode, slotId, startTime: new Date(), status: 'charging', chargeLevel: 24, cost: 0, preAuthAmount: preAuth, durationLimit: duration, timeElapsed: 0, 
+      isLocked: true 
     });
+    sendCommand('LOCK');
     setView('charging');
     setIsPrebookFlow(false);
   };
 
   const toggleLock = async () => {
     if (!activeSession) return;
-    const nextState = !activeSession.isLocked;
-    const command = nextState ? 'LOCK' : 'UNLOCK';
+    // IF currently Locked (true), we want to UNLOCK. IF Unlocked (false), we want to LOCK.
+    const command = activeSession.isLocked ? 'UNLOCK' : 'LOCK';
     await sendCommand(command);
-    setActiveSession(prev => prev ? { ...prev, isLocked: nextState } : null);
-    showNotification(`Hub is now ${command}ed`);
+    setActiveSession(prev => prev ? { ...prev, isLocked: !prev.isLocked } : null);
+    showNotification(`Hub ${command}ed`);
   };
 
   const endSession = (cur = activeSession) => {
     if (!cur) return;
-    sendCommand('UNLOCK'); // Return servo to neutral on finish
+    sendCommand('UNLOCK'); 
     const refund = cur.preAuthAmount - cur.cost;
     const energy = cur.cost > 0 ? cur.cost / 1.2 : 4.5; 
     setWalletBalance(p => p + refund);
