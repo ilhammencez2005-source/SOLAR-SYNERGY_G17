@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { User, CheckCircle2, Wifi, Search, Activity, RefreshCw, Zap as ZapIcon, Info, Settings2, AlertTriangle, ArrowRight, WifiOff, ShieldAlert, Globe, Link, Copy, ExternalLink, Cpu, Code2, Power, BatteryCharging, ShieldCheck } from 'lucide-react';
+import { User, CheckCircle2, Wifi, Search, Activity, RefreshCw, Zap as ZapIcon, Info, Settings2, AlertTriangle, ArrowRight, WifiOff, ShieldAlert, Globe, Link, Copy, ExternalLink, Cpu, Power, BatteryCharging, ShieldCheck, History } from 'lucide-react';
 import { Header } from './components/Header';
 import { NavigationBar } from './components/NavigationBar';
 import { HomeView } from './components/HomeView';
@@ -20,7 +20,6 @@ export default function App() {
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null); 
   const [showTopUpModal, setShowTopUpModal] = useState(false);
   const [receipt, setReceipt] = useState<Receipt | null>(null);
-  const [showArduinoCode, setShowArduinoCode] = useState(false);
   
   // HARDWARE CONFIGURATION
   const [isHardwareOnline, setIsHardwareOnline] = useState(false);
@@ -110,79 +109,6 @@ export default function App() {
     setActiveSession(null); setSelectedStation(null); setView('home');
   };
 
-  const arduinoSnippet = `// --- SOLAR SYNERGY: SMART HUB FIRMWARE (IR SENSOR VERSION) ---
-// 1. IR Sensor: Connect Signal to D3. (Detects scooter = LOW)
-// 2. Servo: Connect Signal to D4. (Locked = 0, Unlocked = 180)
-// 3. Logic: If IR detects an object, it AUTO-LOCKS for security.
-
-#include <ESP8266WiFi.h>
-#include <ESP8266HTTPClient.h>
-#include <WiFiClientSecure.h>
-#include <Servo.h>
-
-const char* ssid = "E91585-Maxis_Fibre";
-const char* pass = "Ilhean2011";
-const char* bridgeUrl = "${fullUrl}";
-
-Servo myServo;
-const int servoPin = D4; 
-const int irPin = D3; // Infrared Sensor Input
-
-void setup() {
-  Serial.begin(115200);
-  
-  pinMode(irPin, INPUT);
-  myServo.attach(servoPin);
-  
-  // Initial position: Start Locked for safety
-  myServo.write(0); 
-  
-  WiFi.begin(ssid, pass);
-  Serial.println("Connecting to WiFi...");
-  
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println("\nSystem Online!");
-}
-
-void loop() {
-  // --- 1. LOCAL AUTO-LOCK LOGIC (IR SENSOR) ---
-  int irStatus = digitalRead(irPin);
-  
-  if (irStatus == LOW) { // Scooter Detected!
-    myServo.write(0);   // LOCK IMMEDIATELY
-    Serial.println("AUTO-LOCK: SCOOTER DETECTED");
-  }
-
-  // --- 2. CLOUD COMMAND LOGIC (BRIDGE) ---
-  if (WiFi.status() == WL_CONNECTED) {
-    WiFiClientSecure client;
-    client.setInsecure();
-    HTTPClient http;
-    
-    if (http.begin(client, bridgeUrl)) {
-      int code = http.GET();
-      if (code == 200) {
-        String res = http.getString();
-        res.trim();
-        
-        // Manual command from app
-        if (res == "UNLOCK") {
-          myServo.write(180); 
-        } else if (res == "LOCK") {
-          myServo.write(0);
-        }
-      }
-      http.end();
-    }
-  }
-  
-  delay(1000); 
-}
-`;
-
   return (
     <div className="flex flex-col h-screen w-full bg-gray-50 text-gray-900 font-sans overflow-hidden">
         {notification && (
@@ -255,20 +181,13 @@ void loop() {
                  <button onClick={() => setShowTopUpModal(true)} className="w-full bg-gray-900 text-white py-5 rounded-[2.5rem] font-black text-xs uppercase tracking-widest shadow-xl">Top Up Wallet</button>
               </div>
 
-              <div className="w-full mt-4 grid grid-cols-2 gap-3">
+              <div className="w-full mt-4">
                 <button 
                   onClick={() => setView('history')}
-                  className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col items-center gap-2 group transition-all active:scale-95"
+                  className="w-full bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col items-center gap-2 group transition-all active:scale-95"
                 >
                   <History className="text-emerald-600 group-hover:scale-110 transition-transform" />
-                  <span className="text-[10px] font-black uppercase tracking-widest">History</span>
-                </button>
-                <button 
-                   onClick={() => setShowArduinoCode(true)}
-                   className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col items-center gap-2 group transition-all active:scale-95"
-                >
-                   <Code2 className="text-slate-600 group-hover:scale-110 transition-transform" />
-                   <span className="text-[10px] font-black uppercase tracking-widest">Dev Tools</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest">View Charging History</span>
                 </button>
               </div>
             </div>
@@ -277,21 +196,6 @@ void loop() {
         </main>
 
         <NavigationBar view={view} setView={setView} hasActiveSession={!!activeSession} showNotification={showNotification} />
-
-        {showArduinoCode && (
-           <div className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-xl flex items-center justify-center p-6" onClick={() => setShowArduinoCode(false)}>
-              <div className="bg-slate-900 w-full max-w-lg rounded-[3rem] p-8 border border-white/10 overflow-hidden flex flex-col max-h-[80vh]" onClick={e => e.stopPropagation()}>
-                 <div className="flex justify-between items-center mb-6">
-                   <h4 className="text-white font-black text-xs uppercase tracking-[0.2em]">Hardware Firmware</h4>
-                   <button onClick={() => setShowArduinoCode(false)} className="text-slate-500 hover:text-white"><ArrowRight size={20} className="rotate-180" /></button>
-                 </div>
-                 <pre className="flex-1 bg-black/50 p-6 rounded-2xl border border-white/5 overflow-auto text-[10px] text-emerald-300 font-mono leading-relaxed">
-                   {arduinoSnippet}
-                 </pre>
-                 <button onClick={() => { navigator.clipboard.writeText(arduinoSnippet); showNotification("Code copied!"); }} className="mt-6 w-full bg-emerald-600 text-white py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-emerald-900/20">Copy To Clipboard</button>
-              </div>
-           </div>
-        )}
 
         {showTopUpModal && (
           <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-xl flex items-center justify-center p-8" onClick={() => setShowTopUpModal(false)}>
