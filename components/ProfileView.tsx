@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { User, Wallet, ShieldCheck, Bluetooth, Loader2, LogOut, ChevronRight, Zap, QrCode } from 'lucide-react';
+import { User, Wallet, ShieldCheck, Bluetooth, Loader2, LogOut, ChevronRight, Zap, QrCode, Lock, Unlock } from 'lucide-react';
 
 interface ProfileViewProps {
   walletBalance: number;
@@ -18,7 +18,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   isBleConnecting, 
   bleDeviceName, 
   onConnectBle,
-  onDisconnectBle
+  onDisconnectBle,
+  onTestCommand
 }) => {
   const [showQr, setShowQr] = useState(false);
 
@@ -59,9 +60,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         {showQr && (
            <div className="mt-6 bg-white rounded-3xl p-6 text-center animate-fade-in-down border border-emerald-100 shadow-xl">
               <div className="w-48 h-48 bg-white rounded-2xl mx-auto flex items-center justify-center mb-4 p-2">
-                {/* Specific QR Code for User */}
                 <img 
-                  src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=SynergyTopUp-Ilhammencez-22010123" 
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=SynergyTopUp-Ilhammencez-22010123`} 
                   alt="Reload QR" 
                   className="w-full h-full object-contain" 
                 />
@@ -72,9 +72,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         )}
       </div>
 
-      {/* Hardware Pairing - Technical text removed */}
+      {/* Hardware Pairing & Controls */}
       <div className="space-y-4">
-        <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.3em] ml-2">Smart Hub</h3>
+        <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.3em] ml-2">Hardware Hub (Pin D4)</h3>
         <div className="bg-white rounded-[3rem] p-8 border border-gray-100 shadow-sm space-y-6">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
@@ -84,11 +84,31 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               <div>
                 <p className="font-black text-gray-900 uppercase tracking-tight">Hub Link</p>
                 <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">
-                  {isBleConnected ? `Linked: ${bleDeviceName || "SolarSynergyHub"}` : "Unlinked"}
+                  {isBleConnected ? `Linked: ${bleDeviceName || "SolarSynergyHub"}` : "Bluetooth Disconnected"}
                 </p>
               </div>
             </div>
           </div>
+
+          {/* Restored Lock/Unlock Buttons */}
+          {isBleConnected && (
+            <div className="grid grid-cols-2 gap-3">
+              <button 
+                onClick={() => onTestCommand('LOCK')}
+                className="bg-gray-900 text-white py-4 rounded-2xl flex flex-col items-center gap-1 active:scale-95 transition-all shadow-lg"
+              >
+                <Lock size={18} />
+                <span className="text-[8px] font-black uppercase tracking-widest">Lock Hub</span>
+              </button>
+              <button 
+                onClick={() => onTestCommand('UNLOCK')}
+                className="bg-emerald-600 text-white py-4 rounded-2xl flex flex-col items-center gap-1 active:scale-95 transition-all shadow-lg"
+              >
+                <Unlock size={18} />
+                <span className="text-[8px] font-black uppercase tracking-widest">Unlock Hub</span>
+              </button>
+            </div>
+          )}
 
           <div className="pt-2">
             {isBleConnected ? (
@@ -113,7 +133,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       </div>
 
       <div className="pt-4">
-        <p className="text-[8px] text-center text-gray-300 font-bold uppercase tracking-[0.2em]">ETP Group 17 • Solar Synergy v1.2</p>
+        <p className="text-[8px] text-center text-gray-300 font-bold uppercase tracking-[0.2em]">ETP Group 17 • Solar Synergy v1.3</p>
       </div>
     </div>
   );

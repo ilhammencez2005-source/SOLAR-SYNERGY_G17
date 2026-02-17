@@ -15,6 +15,23 @@ interface HomeViewProps {
 export const HomeView: React.FC<HomeViewProps> = ({ userLocation, handleLocateMe, stations, onBookStation, onPrebook }) => {
   const [detailStation, setDetailStation] = useState<Station | null>(null);
 
+  // Accurate Distance Calculation
+  const calculateDistance = (lat1: number, lon1: number, stationCoords: string) => {
+    const [lat2, lon2] = stationCoords.split(',').map(Number);
+    const R = 6371; // km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const d = R * c;
+    
+    if (d < 1) return `${(d * 1000).toFixed(0)}m`;
+    return `${d.toFixed(1)}km`;
+  };
+
   const mapSrc = userLocation
     ? `https://maps.google.com/maps?q=${userLocation.lat},${userLocation.lng}&hl=en&z=15&output=embed&iwloc=near`
     : `https://maps.google.com/maps?q=4.3835,100.9638&hl=en&z=17&output=embed&iwloc=near`;
@@ -40,57 +57,63 @@ export const HomeView: React.FC<HomeViewProps> = ({ userLocation, handleLocateMe
           </button>
        </div>
 
-       {/* List of Hubs - Distances are now static in constants for instant UI */}
+       {/* List of Hubs */}
        <div className="max-w-4xl mx-auto w-full px-4 sm:px-6 py-8 relative z-10 space-y-6">
           <div className="space-y-4">
              <h2 className="text-xs font-black text-gray-400 uppercase tracking-[0.3em] ml-2">Nearby Charging Hubs</h2>
-             {stations.map(station => (
-                <div key={station.id} className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all">
-                   <div className="p-8">
-                      <div className="flex justify-between items-start mb-6">
-                         <div>
-                            <h3 className="text-xl font-black text-gray-900 tracking-tight">{station.name}</h3>
-                            <div className="flex items-center gap-3 mt-1.5">
-                               <span className={`text-[9px] font-black px-3 py-1 rounded-lg ${station.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
-                                  {station.status.toUpperCase()}
-                               </span>
-                               <span className="text-[11px] font-bold text-gray-400 flex items-center gap-1.5">
-                                   <MapPin size={12} className="text-emerald-500" /> {station.distance}
-                               </span>
-                            </div>
-                         </div>
-                         <div className="bg-gray-50 px-4 py-2 rounded-2xl flex flex-col items-center border border-gray-100">
-                            <span className="text-lg font-black text-gray-800 leading-none">{station.slots}</span>
-                            <span className="text-[8px] font-black text-gray-400 uppercase">Slots</span>
-                         </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-3 mb-6">
-                         <button 
-                            onClick={() => onPrebook(station)}
-                            className="px-4 bg-gray-50 border border-gray-100 text-gray-800 text-[10px] font-black py-4 rounded-2xl transition-all flex items-center justify-center gap-2 uppercase tracking-widest active:scale-95"
-                         >
-                            <CalendarClock size={16} />
-                            PREBOOK
-                         </button>
-                         <button 
-                            onClick={() => onBookStation(station)}
-                            className="px-4 bg-emerald-600 text-white text-[10px] font-black py-4 rounded-2xl transition-all flex items-center justify-center gap-2 shadow-xl shadow-emerald-100 active:scale-95 uppercase tracking-widest"
-                         >
-                            <Zap size={16} fill="currentColor" />
-                            CHARGE NOW
-                         </button>
-                      </div>
-                      <button 
-                          onClick={() => setDetailStation(station)}
-                          className="w-full text-gray-400 text-[9px] font-black py-2 rounded-xl flex items-center justify-center gap-1 uppercase tracking-[0.3em]"
-                       >
-                          Details & Pricing
-                          <ArrowRight size={10} />
-                       </button>
-                   </div>
-                </div>
-             ))}
+             {stations.map(station => {
+                const displayDistance = userLocation 
+                  ? calculateDistance(userLocation.lat, userLocation.lng, station.coordinates)
+                  : station.distance;
+
+                return (
+                  <div key={station.id} className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all">
+                    <div className="p-8">
+                        <div className="flex justify-between items-start mb-6">
+                          <div>
+                              <h3 className="text-xl font-black text-gray-900 tracking-tight">{station.name}</h3>
+                              <div className="flex items-center gap-3 mt-1.5">
+                                <span className={`text-[9px] font-black px-3 py-1 rounded-lg ${station.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
+                                    {station.status.toUpperCase()}
+                                </span>
+                                <span className="text-[11px] font-bold text-gray-400 flex items-center gap-1.5">
+                                    <MapPin size={12} className="text-emerald-500" /> {displayDistance}
+                                </span>
+                              </div>
+                          </div>
+                          <div className="bg-gray-50 px-4 py-2 rounded-2xl flex flex-col items-center border border-gray-100">
+                              <span className="text-lg font-black text-gray-800 leading-none">{station.slots}</span>
+                              <span className="text-[8px] font-black text-gray-400 uppercase">Slots</span>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-3 mb-6">
+                          <button 
+                              onClick={() => onPrebook(station)}
+                              className="px-4 bg-gray-50 border border-gray-100 text-gray-800 text-[10px] font-black py-4 rounded-2xl transition-all flex items-center justify-center gap-2 uppercase tracking-widest active:scale-95"
+                          >
+                              <CalendarClock size={16} />
+                              PREBOOK
+                          </button>
+                          <button 
+                              onClick={() => onBookStation(station)}
+                              className="px-4 bg-emerald-600 text-white text-[10px] font-black py-4 rounded-2xl transition-all flex items-center justify-center gap-2 shadow-xl shadow-emerald-100 active:scale-95 uppercase tracking-widest"
+                          >
+                              <Zap size={16} fill="currentColor" />
+                              CHARGE NOW
+                          </button>
+                        </div>
+                        <button 
+                            onClick={() => setDetailStation(station)}
+                            className="w-full text-gray-400 text-[9px] font-black py-2 rounded-xl flex items-center justify-center gap-1 uppercase tracking-[0.3em]"
+                        >
+                            Details & Pricing
+                            <ArrowRight size={10} />
+                        </button>
+                    </div>
+                  </div>
+                );
+             })}
           </div>
        </div>
 
