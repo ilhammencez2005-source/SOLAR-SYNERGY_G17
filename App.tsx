@@ -8,8 +8,13 @@ import { BookingView } from './components/BookingView';
 import { ChargingSessionView } from './components/ChargingSessionView';
 import { GeminiAssistant } from './components/GeminiAssistant';
 import { HistoryView } from './components/HistoryView';
+import { ProfileView } from './components/ProfileView';
 import { STATIONS } from './constants';
 import { Station, Session, UserLocation, ViewState, ChargingMode, Receipt, ChargingHistoryItem } from './types';
+
+// BLE UUID constants
+const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
+const CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
 
 export default function App() {
   const [view, setView] = useState<ViewState>('home'); 
@@ -20,61 +25,73 @@ export default function App() {
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null); 
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [chargingHistory, setChargingHistory] = useState<ChargingHistoryItem[]>([]);
-  const [cloudState, setCloudState] = useState<string>("LOCK");
   
-  const [isPrebookFlow, setIsPrebookFlow] = useState(false);
-  const [prebookCountdown, setPrebookCountdown] = useState<number | null>(null);
-  const [pendingSessionData, setPendingSessionData] = useState<any>(null);
-
-  const apiPath = '/api/status';
+  // Bluetooth State
+  const [bleDevice, setBleDevice] = useState<any | null>(null);
+  const [bleCharacteristic, setBleCharacteristic] = useState<any | null>(null);
+  const [isBleConnecting, setIsBleConnecting] = useState(false);
 
   const showNotification = (msg: string) => {
     setNotification(msg);
     setTimeout(() => setNotification(null), 3500);
   };
 
-  // CHECK SERVER STATE (What the Arduino actually sees)
-  const syncWithCloud = async () => {
+  const connectBluetooth = async () => {
+    setIsBleConnecting(true);
     try {
-      const res = await fetch(`${apiPath}?t=${Date.now()}`); // Cache buster
-      if (res.ok) {
-        const text = await res.text();
-        const serverStatus = text.trim().toUpperCase();
-        setCloudState(serverStatus);
+      const device = await (navigator as any).bluetooth.requestDevice({
+        filters: [{ name: 'SolarSynergyHub' }],
+        optionalServices: [SERVICE_UUID]
+      });
+
+      const server = await device.gatt?.connect();
+      const service = await server?.getPrimaryService(SERVICE_UUID);
+      const characteristic = await service?.getCharacteristic(CHARACTERISTIC_UUID);
+
+      if (characteristic) {
+        setBleDevice(device);
+        setBleCharacteristic(characteristic);
+        showNotification("HUB PAIRED VIA BT");
+        
+        device.addEventListener('gattserverdisconnected', () => {
+          setBleDevice(null);
+          setBleCharacteristic(null);
+          showNotification("HUB DISCONNECTED");
+        });
       }
-    } catch (e) {
-      console.warn("Cloud sync warning:", e);
+    } catch (error) {
+      console.error("BLE Error:", error);
+      showNotification("BT CONNECTION FAILED");
+    } finally {
+      setIsBleConnecting(false);
     }
   };
 
-  const sendCommandToBridge = async (command: 'UNLOCK' | 'LOCK') => {
-     console.log(`[HARDWARE] Requesting ${command}...`);
-     try {
-       const res = await fetch(`${apiPath}?cb=${Date.now()}`, {
-         method: 'POST',
-         headers: { 'Content-Type': 'application/json' },
-         body: JSON.stringify({ command })
-       });
-       if (res.ok) {
-         const data = await res.json();
-         setCloudState(data.state);
-         console.log(`[HARDWARE] Cloud successfully updated to: ${data.state}`);
-       }
-     } catch (e) {
-       console.error("Critical Cloud Bridge Error:", e);
-       showNotification("BRIDGE DISCONNECTED");
-     }
+  const disconnectBluetooth = () => {
+    if (bleDevice?.gatt?.connected) {
+      bleDevice.gatt.disconnect();
+    }
+    setBleDevice(null);
+    setBleCharacteristic(null);
+    showNotification("HUB UNPAIRED");
   };
 
-  // Poll cloud state while charging view is active
-  useEffect(() => {
-    let poller: any;
-    if (activeSession) {
-      syncWithCloud();
-      poller = setInterval(syncWithCloud, 2000); // Poll every 2 seconds
+  const sendBleCommand = async (command: 'UNLOCK' | 'LOCK') => {
+    if (!bleCharacteristic) {
+      showNotification("PAIR HUB IN PROFILE FIRST");
+      return false;
     }
-    return () => clearInterval(poller);
-  }, [activeSession]);
+    try {
+      const encoder = new TextEncoder();
+      await bleCharacteristic.writeValue(encoder.encode(command));
+      showNotification(`${command} SENT`);
+      return true;
+    } catch (error) {
+      console.error("BLE Send Error:", error);
+      showNotification("COMMAND FAILED");
+      return false;
+    }
+  };
 
   useEffect(() => {
     if ("geolocation" in navigator) {
@@ -83,17 +100,6 @@ export default function App() {
       });
     }
   }, []);
-
-  useEffect(() => {
-    let timer: any;
-    if (prebookCountdown !== null && prebookCountdown > 0) {
-      timer = setTimeout(() => setPrebookCountdown(prebookCountdown - 1), 1000);
-    } else if (prebookCountdown === 0) {
-      setPrebookCountdown(null);
-      executeStartCharging(pendingSessionData.mode, pendingSessionData.slotId, pendingSessionData.duration, pendingSessionData.preAuth);
-    }
-    return () => clearTimeout(timer);
-  }, [prebookCountdown, pendingSessionData]);
 
   useEffect(() => {
     let interval: any;
@@ -112,46 +118,34 @@ export default function App() {
 
   const startCharging = (mode: ChargingMode, slotId: string, duration: number | 'full', preAuth: number) => {
     if (preAuth > walletBalance) return showNotification("INSUFFICIENT CREDITS");
-    if (isPrebookFlow) {
-      setPendingSessionData({ mode, slotId, duration, preAuth });
-      setPrebookCountdown(10);
-    } else {
-      executeStartCharging(mode, slotId, duration, preAuth);
-    }
-  };
-
-  const executeStartCharging = (mode: ChargingMode, slotId: string, duration: number | 'full', preAuth: number) => {
     setWalletBalance(p => p - preAuth);
-    // HUB starts in LOCKED mode
     setActiveSession({ 
       station: selectedStation!, 
       mode, slotId, startTime: new Date(), status: 'charging', chargeLevel: 24, cost: 0, preAuthAmount: preAuth, durationLimit: duration, timeElapsed: 0, 
       isLocked: true 
     });
-    sendCommandToBridge('LOCK');
     setView('charging');
-    setIsPrebookFlow(false);
   };
 
   const toggleLock = async () => {
     if (!activeSession) return;
+    const nextLockedState = !activeSession.isLocked;
+    const command = nextLockedState ? 'LOCK' : 'UNLOCK';
     
-    // CURRENT STATE -> TARGET COMMAND
-    // If locked (true) -> We want to UNLOCK
-    // If unlocked (false) -> We want to LOCK
-    const nextCommand = activeSession.isLocked ? 'UNLOCK' : 'LOCK';
-    
-    // UI Update immediately
-    setActiveSession(prev => prev ? { ...prev, isLocked: !prev.isLocked } : null);
-    
-    // Server Sync
-    await sendCommandToBridge(nextCommand);
-    showNotification(`${nextCommand} Command Sent`);
+    const success = await sendBleCommand(command);
+    if (success) {
+      setActiveSession(prev => prev ? { ...prev, isLocked: nextLockedState } : null);
+    }
   };
 
-  const endSession = (cur = activeSession) => {
+  const endSession = async (cur = activeSession) => {
     if (!cur) return;
-    sendCommandToBridge('UNLOCK'); // Always unlock on finish
+    
+    // Auto-unlock hardware if connected
+    if (bleCharacteristic) {
+      await sendBleCommand('UNLOCK');
+    }
+
     const refund = cur.preAuthAmount - cur.cost;
     const energy = cur.cost > 0 ? cur.cost / 1.2 : 4.5; 
     setWalletBalance(p => p + refund);
@@ -166,8 +160,20 @@ export default function App() {
     };
     
     setChargingHistory(prev => [historyItem, ...prev]);
-    setReceipt({ stationName: cur.station.name, date: new Date().toLocaleString(), duration: `${Math.floor(cur.timeElapsed / 60)}m`, totalEnergy: `${energy.toFixed(2)}kWh`, mode: cur.mode, cost: cur.cost, paid: cur.preAuthAmount, refund: refund });
-    setActiveSession(null); setSelectedStation(null); setView('home');
+    setReceipt({ 
+      stationName: cur.station.name, 
+      date: new Date().toLocaleString(), 
+      duration: `${Math.floor(cur.timeElapsed / 60)}m`, 
+      totalEnergy: `${energy.toFixed(2)}kWh`, 
+      mode: cur.mode, 
+      cost: cur.cost, 
+      paid: cur.preAuthAmount, 
+      refund: refund 
+    });
+    
+    setActiveSession(null); 
+    setSelectedStation(null); 
+    setView('home');
   };
 
   return (
@@ -190,13 +196,13 @@ export default function App() {
               userLocation={userLocation} 
               handleLocateMe={() => {}} 
               stations={STATIONS} 
-              onBookStation={(s) => { setSelectedStation(s); setIsPrebookFlow(false); setView('booking'); }} 
-              onPrebook={(s) => { setSelectedStation(s); setIsPrebookFlow(true); setView('booking'); }} 
+              onBookStation={(s) => { setSelectedStation(s); setView('booking'); }} 
+              onPrebook={(s) => { setSelectedStation(s); setView('booking'); }} 
             />
           )}
           
           {view === 'booking' && selectedStation && (
-            <BookingView selectedStation={selectedStation} onBack={() => { setView('home'); setSelectedStation(null); }} onStartCharging={startCharging} isPrebook={isPrebookFlow} />
+            <BookingView selectedStation={selectedStation} onBack={() => { setView('home'); setSelectedStation(null); }} onStartCharging={startCharging} />
           )}
 
           {view === 'charging' && (
@@ -204,30 +210,27 @@ export default function App() {
               activeSession={activeSession} 
               toggleLock={toggleLock} 
               endSession={() => endSession()} 
-              isHardwareConnected={true} 
-              cloudState={cloudState}
+              isBleConnected={!!bleCharacteristic}
+              isBleConnecting={isBleConnecting}
+              onConnectBle={connectBluetooth}
             />
           )}
           {view === 'history' && <HistoryView history={chargingHistory} onClearHistory={() => setChargingHistory([])} />}
-          {view === 'profile' && <div className="p-8 text-center font-black uppercase text-gray-400">Profile View</div>}
+          {view === 'profile' && (
+            <ProfileView 
+              walletBalance={walletBalance} 
+              isBleConnected={!!bleCharacteristic}
+              isBleConnecting={isBleConnecting}
+              bleDeviceName={bleDevice?.name}
+              onConnectBle={connectBluetooth}
+              onDisconnectBle={disconnectBluetooth}
+              onTestCommand={sendBleCommand}
+            />
+          )}
           {view === 'assistant' && <GeminiAssistant onClose={() => setView('home')} contextData={{ walletBalance, selectedStation }} />}
         </main>
 
         <NavigationBar view={view} setView={setView} hasActiveSession={!!activeSession} showNotification={showNotification} />
-
-        {prebookCountdown !== null && (
-          <div className="fixed inset-0 z-[200] bg-white/95 backdrop-blur-xl flex flex-col items-center justify-center p-8 text-center animate-fade-in-down">
-            <div className="relative w-56 h-56 flex items-center justify-center mb-8">
-               <svg className="absolute inset-0 w-full h-full transform -rotate-90">
-                  <circle cx="50%" cy="50%" r="45%" stroke="#f1f5f9" strokeWidth="10" fill="transparent" />
-                  <circle cx="50%" cy="50%" r="45%" stroke="#10b981" strokeWidth="10" fill="transparent" strokeDasharray="283%" strokeDashoffset={`${283 - (283 * (10 - prebookCountdown)) / 10}%`} className="transition-all duration-1000 ease-linear" />
-               </svg>
-               <span className="text-7xl font-black text-gray-900 tabular-nums">{prebookCountdown}</span>
-            </div>
-            <h3 className="text-3xl font-black text-gray-900 uppercase tracking-tight mb-3">Syncing Hub</h3>
-            <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest leading-relaxed">Hardware is ready. Start session to enable controls.</p>
-          </div>
-        )}
 
         {receipt && (
           <div className="fixed inset-0 z-[110] bg-black/70 backdrop-blur-2xl flex items-center justify-center p-6">

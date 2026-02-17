@@ -1,34 +1,33 @@
 
-import React, { useState } from 'react';
-import { Zap, CheckCircle2, Lock, Unlock, Power, Loader2, Globe } from 'lucide-react';
+import React from 'react';
+import { Zap, CheckCircle2, Lock, Unlock, Power, Loader2, Bluetooth } from 'lucide-react';
 import { Session } from '../types';
 
 interface ChargingSessionViewProps {
   activeSession: Session | null;
   toggleLock: () => void;
   endSession: () => void;
-  isHardwareConnected: boolean;
-  cloudState: string;
+  isBleConnected: boolean;
+  isBleConnecting: boolean;
+  onConnectBle: () => void;
 }
 
-export const ChargingSessionView: React.FC<ChargingSessionViewProps> = ({ activeSession, toggleLock, endSession, cloudState }) => {
-  const [isLocking, setIsLocking] = useState(false);
-
+export const ChargingSessionView: React.FC<ChargingSessionViewProps> = ({ 
+  activeSession, 
+  toggleLock, 
+  endSession, 
+  isBleConnected, 
+  isBleConnecting, 
+  onConnectBle 
+}) => {
   if (!activeSession) return <div className="p-10 text-center text-gray-500 font-black uppercase tracking-widest">No active session found.</div>;
   const percentage = Math.round(activeSession.chargeLevel);
   const isCompleted = activeSession.status === 'completed';
 
-  const handleLockClick = () => {
-    setIsLocking(true);
-    toggleLock();
-    // Simulate hardware delay for UX
-    setTimeout(() => setIsLocking(false), 1200);
-  };
-
   return (
     <div className="w-full max-w-md mx-auto h-full flex flex-col justify-between p-8 animate-fade-in-down pb-40">
       
-      {/* Dynamic Status Header */}
+      {/* Header Info */}
       <div className="flex flex-col items-center gap-3 py-2 relative">
          <div className="bg-white/90 backdrop-blur-md px-6 py-2.5 rounded-full border border-gray-100 shadow-sm flex items-center gap-2">
             <div className={`w-2.5 h-2.5 rounded-full ${isCompleted ? 'bg-green-500' : 'bg-emerald-500 animate-pulse'}`}></div>
@@ -37,16 +36,16 @@ export const ChargingSessionView: React.FC<ChargingSessionViewProps> = ({ active
             </span>
          </div>
          
-         {/* CLOUD SYNC BADGE - CRITICAL FOR DEBUGGING */}
-         <div className="flex items-center gap-1.5 px-4 py-1.5 bg-gray-900 rounded-full shadow-lg border border-white/10">
-            <Globe size={12} className="text-emerald-400" />
+         {/* BLUETOOTH STATUS INDICATOR */}
+         <div className={`flex items-center gap-2 px-4 py-2 rounded-full shadow-lg border transition-colors ${isBleConnected ? 'bg-emerald-600 border-emerald-500' : 'bg-slate-900 border-white/5'}`}>
+            <Bluetooth size={12} className={`text-white ${isBleConnecting ? 'animate-pulse' : ''}`} />
             <span className="text-[9px] font-black text-white uppercase tracking-widest">
-              Live Hub Status: <span className={cloudState === 'UNLOCK' ? 'text-emerald-400 underline underline-offset-4' : 'text-gray-400'}>{cloudState}</span>
+              HUB: {isBleConnected ? "PAIRED" : isBleConnecting ? "PAIRING..." : "DISCONNECTED"}
             </span>
          </div>
       </div>
 
-      {/* Progress Visualization */}
+      {/* Circle Progress */}
       <div className="flex-1 flex flex-col items-center justify-center relative my-8">
          <div className="relative w-72 h-72 sm:w-80 sm:h-80 flex items-center justify-center">
             <svg className="w-full h-full transform -rotate-90 drop-shadow-2xl">
@@ -79,7 +78,7 @@ export const ChargingSessionView: React.FC<ChargingSessionViewProps> = ({ active
          </div>
       </div>
 
-      {/* Session Controls */}
+      {/* Action Controls */}
       <div className="space-y-4 w-full">
          <div className="grid grid-cols-2 gap-4">
             <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col items-center">
@@ -97,26 +96,32 @@ export const ChargingSessionView: React.FC<ChargingSessionViewProps> = ({ active
          </div>
 
          {!isCompleted && (
-            <button 
-               onClick={handleLockClick}
-               disabled={isLocking}
-               className={`w-full py-6 rounded-[2.5rem] text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all duration-500 relative overflow-hidden shadow-xl ${
-                  activeSession.isLocked 
-                  ? 'bg-slate-900 text-white shadow-slate-200' 
-                  : 'bg-emerald-50 text-emerald-600 shadow-emerald-50'
-               } ${isLocking ? 'cursor-wait opacity-80' : 'active:scale-95'}`}
-            >
-               {isLocking ? (
-                 <Loader2 size={20} className="animate-spin text-emerald-400" />
-               ) : (
-                 activeSession.isLocked ? <Lock size={20} className="text-emerald-400" /> : <Unlock size={20} className="text-emerald-500" />
-               )}
-               <div className="flex flex-col items-start leading-none">
-                  <span className="text-[10px] font-black">
-                     {isLocking ? "Syncing..." : (activeSession.isLocked ? "LOCK ENGAGED" : "UNLOCK HUB")}
+            <div className="space-y-3">
+              {!isBleConnected ? (
+                 <button 
+                    onClick={onConnectBle}
+                    disabled={isBleConnecting}
+                    className="w-full py-6 rounded-[2.5rem] bg-slate-900 text-white text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all active:scale-95 shadow-xl disabled:opacity-50"
+                 >
+                    {isBleConnecting ? <Loader2 size={20} className="animate-spin" /> : <Bluetooth size={20} />}
+                    {isBleConnecting ? "PAIRING..." : "PAIR WITH HUB"}
+                 </button>
+              ) : (
+                <button 
+                  onClick={toggleLock}
+                  className={`w-full py-6 rounded-[2.5rem] text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all duration-500 relative overflow-hidden shadow-xl active:scale-95 ${
+                      activeSession.isLocked 
+                      ? 'bg-emerald-600 text-white shadow-emerald-200' 
+                      : 'bg-white border-2 border-slate-900 text-slate-900'
+                  }`}
+                >
+                  {activeSession.isLocked ? <Unlock size={20} /> : <Lock size={20} />}
+                  <span className="text-[11px] font-black">
+                      {activeSession.isLocked ? "UNLOCK HUB" : "LOCK HUB"}
                   </span>
-               </div>
-            </button>
+                </button>
+              )}
+            </div>
          )}
 
          <div className="pt-2">
@@ -124,8 +129,8 @@ export const ChargingSessionView: React.FC<ChargingSessionViewProps> = ({ active
                 onClick={endSession} 
                 className={`w-full py-6 rounded-[2.5rem] font-black text-xs uppercase tracking-[0.3em] shadow-2xl transition-all transform active:scale-95 flex items-center justify-center gap-3 ${
                    isCompleted 
-                   ? 'bg-emerald-600 text-white shadow-emerald-100' 
-                   : 'bg-rose-500 text-white shadow-rose-100'
+                   ? 'bg-emerald-600 text-white' 
+                   : 'bg-rose-500 text-white'
                 }`}
              >
                 {isCompleted ? <CheckCircle2 size={24} /> : <Power size={24} />}
