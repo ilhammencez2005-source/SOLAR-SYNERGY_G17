@@ -98,7 +98,7 @@ export const ChargingSessionView: React.FC<ChargingSessionViewProps> = ({
                 {isCompleted ? "FINISH SESSION" : "END CHARGING"}
              </button>
              <p className="text-[8px] text-center text-gray-400 font-black uppercase tracking-[0.2em] mt-4">
-               HUB WILL AUTO-UNLOCK ON COMPLETION
+               CHARGER WILL AUTOMATICALLY UNLOCK ON COMPLETION
              </p>
          </div>
       </div>

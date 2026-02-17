@@ -64,7 +64,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ userLocation, handleLocateMe
              {stations.map(station => {
                 const displayDistance = userLocation 
                   ? calculateDistance(userLocation.lat, userLocation.lng, station.coordinates)
-                  : station.distance;
+                  : "Calculating..."; // Show calculating instead of fallback if location unknown
 
                 return (
                   <div key={station.id} className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all">
