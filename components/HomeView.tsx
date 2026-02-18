@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { MapPin, Crosshair, CalendarClock, Zap, ArrowRight, Sun, Leaf, X } from 'lucide-react';
+import { MapPin, Crosshair, CalendarClock, Zap, ArrowRight, Sun, Leaf, X, Star, Clock } from 'lucide-react';
 import { Station, UserLocation } from '../types';
 import { PRICING } from '../constants';
 
@@ -73,7 +73,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ userLocation, handleLocateMe
              {stations.map(station => {
                 const displayDistance = userLocation 
                   ? calculateDistance(userLocation.lat, userLocation.lng, station.coordinates)
-                  : "Locating..."; // Avoid hardcoded values when location is unknown
+                  : "Locating..."; 
 
                 return (
                   <div key={station.id} className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all">
@@ -128,29 +128,86 @@ export const HomeView: React.FC<HomeViewProps> = ({ userLocation, handleLocateMe
 
        {detailStation && (
          <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-end justify-center animate-fade-in-down" onClick={() => setDetailStation(null)}>
-            <div className="bg-white w-full max-w-lg rounded-t-[3rem] shadow-2xl h-[70vh] flex flex-col" onClick={e => e.stopPropagation()}>
-               <div className="p-10 flex-1 overflow-y-auto space-y-10">
+            <div className="bg-white w-full max-w-lg rounded-t-[3rem] shadow-2xl h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
+               <div className="p-10 flex-1 overflow-y-auto space-y-10 scrollbar-hide">
                   <div className="flex justify-between items-center">
                     <h2 className="text-3xl font-black tracking-tight">{detailStation.name}</h2>
                     <button onClick={() => setDetailStation(null)} className="p-2 bg-gray-100 rounded-full"><X size={24} /></button>
                   </div>
-                  <div className="bg-gray-50 border border-gray-100 rounded-[2.5rem] p-8 space-y-8">
-                     <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-3">
-                           <Sun size={24} className="text-emerald-500" />
-                           <div>
-                              <p className="font-black text-gray-800">Eco Charge</p>
-                              <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Free Solar Synergy</p>
+                  
+                  <div className="space-y-4">
+                    <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Available Modes</h3>
+                    <div className="bg-gray-50 border border-gray-100 rounded-[2.5rem] p-8 space-y-8">
+                       {/* Eco Mode Info */}
+                       <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-3">
+                             <Sun size={24} className="text-emerald-500" />
+                             <div>
+                                <p className="font-black text-gray-800">Eco Charge</p>
+                                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Free Solar Synergy</p>
+                             </div>
+                          </div>
+                          <span className="bg-emerald-600 text-white px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest">FREE</span>
+                       </div>
+
+                       {/* Turbo Mode Info */}
+                       <div className="flex justify-between items-center border-t border-gray-200 pt-8">
+                          <div className="flex items-center gap-3">
+                             <Zap size={24} className="text-yellow-500" fill="currentColor" />
+                             <div>
+                                <p className="font-black text-gray-800">Turbo Charge</p>
+                                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">RM 1.20 Per kWh</p>
+                             </div>
+                          </div>
+                          <span className="bg-yellow-500 text-white px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest">PAID</span>
+                       </div>
+                    </div>
+                  </div>
+
+                  {/* Aesthetic Operating Hours Section */}
+                  <div className="px-2">
+                    <div className="bg-emerald-50/50 border border-emerald-100/50 rounded-[2.5rem] p-8 flex items-center gap-6 shadow-sm">
+                       <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-50">
+                          <Clock size={28} strokeWidth={2.5} />
+                       </div>
+                       <div>
+                          <p className="text-[10px] font-black text-emerald-800 uppercase tracking-[0.2em] mb-1">Status</p>
+                          <div className="flex items-baseline gap-2">
+                             <p className="text-2xl font-black text-gray-900 tracking-tighter uppercase">OPERATING: {detailStation.operatingHours}</p>
+                             <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse mb-1"></div>
+                          </div>
+                       </div>
+                    </div>
+                  </div>
+
+                  {/* RESTORED REVIEWS SECTION */}
+                  <div className="space-y-4">
+                    <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Community Reviews</h3>
+                    <div className="space-y-3">
+                      {detailStation.reviews.map((review) => (
+                        <div key={review.id} className="bg-white border border-gray-100 rounded-[2rem] p-6 shadow-sm">
+                           <div className="flex justify-between items-start mb-2">
+                             <div>
+                               <p className="font-black text-gray-900 text-xs uppercase tracking-tight">{review.user}</p>
+                               <div className="flex items-center gap-0.5 mt-1">
+                                 {[...Array(5)].map((_, i) => (
+                                   <Star key={i} size={10} className={i < review.rating ? "text-yellow-400" : "text-gray-200"} fill={i < review.rating ? "currentColor" : "none"} />
+                                 ))}
+                               </div>
+                             </div>
+                             <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest">{review.date}</span>
                            </div>
+                           <p className="text-[11px] text-gray-600 font-bold leading-relaxed">{review.comment}</p>
                         </div>
-                        <span className="bg-emerald-600 text-white px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest">FREE</span>
-                     </div>
+                      ))}
+                    </div>
                   </div>
                </div>
-               <div className="p-10 border-t border-gray-100">
+               
+               <div className="p-10 border-t border-gray-100 bg-white rounded-t-3xl">
                   <button 
                      onClick={() => { setDetailStation(null); onBookStation(detailStation); }}
-                     className="w-full bg-emerald-600 text-white py-6 rounded-[2.5rem] font-black text-lg shadow-2xl active:scale-95 transition-all"
+                     className="w-full bg-emerald-600 text-white py-6 rounded-[2.5rem] font-black text-lg shadow-2xl active:scale-95 transition-all uppercase tracking-widest"
                   >
                      BOOK HUB
                   </button>

@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { User, Wallet, ShieldCheck, Bluetooth, Loader2, LogOut, ChevronRight, Zap, QrCode, Lock, Unlock, AlertCircle, Info, Volume2 } from 'lucide-react';
+import { User, Wallet, ShieldCheck, Bluetooth, Loader2, LogOut, ChevronRight, Zap, QrCode, Lock, Unlock, AlertCircle } from 'lucide-react';
 
 interface ProfileViewProps {
   walletBalance: number;
@@ -22,7 +22,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   onTestCommand
 }) => {
   const [showQr, setShowQr] = useState(false);
-  const [showTips, setShowTips] = useState(false);
   
   const isBluetoothSupported = typeof navigator !== 'undefined' && !!(navigator as any).bluetooth;
 
@@ -80,38 +79,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         )}
       </div>
 
-      {/* Hardware Pairing & Controls */}
+      {/* Hardware Link & Testing */}
       <div className="space-y-4">
         <div className="flex items-center justify-between px-2">
-           <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.3em]">Hardware Hub Config</h3>
-           <button onClick={() => setShowTips(!showTips)} className="text-emerald-600 text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
-             <Info size={14} /> System Specs
-           </button>
+           <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.3em]">Hub Testing & Connection</h3>
         </div>
         
-        {showTips && (
-          <div className="bg-emerald-50 border border-emerald-100 p-6 rounded-[2.5rem] animate-fade-in-down text-emerald-900 space-y-4">
-             <div>
-                <p className="text-[10px] font-black uppercase tracking-widest mb-2 flex items-center gap-2">
-                   <Zap size={12} /> Pin Mapping:
-                </p>
-                <ul className="text-[9px] font-bold space-y-1 uppercase leading-relaxed opacity-80 pl-2">
-                   <li>• Servo Motor (Lock): <span className="bg-white px-1.5 py-0.5 rounded border border-emerald-200 ml-1">Pin D4</span></li>
-                   <li>• Piezo Buzzer (Alert): <span className="bg-white px-1.5 py-0.5 rounded border border-emerald-200 ml-1">Pin D2</span></li>
-                </ul>
-             </div>
-             <div>
-                <p className="text-[10px] font-black uppercase tracking-widest mb-2 flex items-center gap-2">
-                   <Volume2 size={12} /> Synergy Alerts:
-                </p>
-                <ul className="text-[9px] font-bold space-y-1 uppercase leading-relaxed opacity-80 pl-2">
-                   <li>• Unlock: 2s Continuous Tone</li>
-                   <li>• Lock: Short Double Beep</li>
-                </ul>
-             </div>
-          </div>
-        )}
-
         {!isBluetoothSupported && (
           <div className="bg-rose-50 border border-rose-100 p-6 rounded-[2.5rem] flex items-center gap-4 text-rose-700 mb-4 animate-fade-in-down">
             <AlertCircle className="shrink-0" size={24} />
@@ -144,14 +117,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 className="bg-gray-900 text-white py-5 rounded-2xl flex flex-col items-center justify-center gap-2 active:scale-95 transition-all shadow-xl hover:bg-black group"
               >
                 <Lock size={22} className="group-active:scale-110 transition-transform" />
-                <span className="text-[9px] font-black uppercase tracking-[0.2em]">LOCK HUB</span>
+                <span className="text-[9px] font-black uppercase tracking-[0.2em]">TEST LOCK</span>
               </button>
               <button 
                 onClick={() => onTestCommand('UNLOCK')}
                 className="bg-emerald-600 text-white py-5 rounded-2xl flex flex-col items-center justify-center gap-2 active:scale-95 transition-all shadow-xl hover:bg-emerald-700 group"
               >
                 <Unlock size={22} className="group-active:scale-110 transition-transform" />
-                <span className="text-[9px] font-black uppercase tracking-[0.2em]">UNLOCK HUB</span>
+                <span className="text-[9px] font-black uppercase tracking-[0.2em]">TEST UNLOCK</span>
               </button>
             </div>
           )}
