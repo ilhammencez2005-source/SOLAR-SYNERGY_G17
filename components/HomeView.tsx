@@ -52,7 +52,6 @@ export const HomeView: React.FC<HomeViewProps> = ({ userLocation, handleLocateMe
              className="absolute inset-0 w-full h-full opacity-90 grayscale-[10%]"
              title="Map"
           ></iframe>
-          <div className="absolute inset-0 bg-gradient-to-t from-gray-50/80 to-transparent pointer-events-none h-20 bottom-0" />
           <button 
              onClick={handleLocateMe}
              className="absolute bottom-6 right-6 bg-white p-3.5 rounded-2xl shadow-2xl text-gray-700 z-10 active:scale-95 transition-all hover:bg-gray-50 border border-gray-100"
