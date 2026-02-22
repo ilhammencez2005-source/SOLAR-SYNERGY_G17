@@ -1,21 +1,22 @@
+"use client";
 
 import React, { useState, useEffect } from 'react';
 import { User, CheckCircle2, Zap as ZapIcon, Power, History, Loader2, ShieldCheck, Clock } from 'lucide-react';
-import { Header } from './components/Header';
-import { NavigationBar } from './components/NavigationBar';
-import { HomeView } from './components/HomeView';
-import { BookingView } from './components/BookingView';
-import { ChargingSessionView } from './components/ChargingSessionView';
-import { GeminiAssistant } from './components/GeminiAssistant';
-import { HistoryView } from './components/HistoryView';
-import { ProfileView } from './components/ProfileView';
-import { STATIONS } from './constants';
-import { Station, Session, UserLocation, ViewState, ChargingMode, Receipt, ChargingHistoryItem } from './types';
+import { Header } from '../components/Header';
+import { NavigationBar } from '../components/NavigationBar';
+import { HomeView } from '../components/HomeView';
+import { BookingView } from '../components/BookingView';
+import { ChargingSessionView } from '../components/ChargingSessionView';
+import { GeminiAssistant } from '../components/GeminiAssistant';
+import { HistoryView } from '../components/HistoryView';
+import { ProfileView } from '../components/ProfileView';
+import { STATIONS } from '../constants';
+import { Station, Session, UserLocation, ViewState, ChargingMode, Receipt, ChargingHistoryItem } from '../types';
 
 const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
 const CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
 
-export default function App() {
+export default function Page() {
   const [view, setView] = useState<ViewState>('home'); 
   const [selectedStation, setSelectedStation] = useState<Station | null>(null);
   const [activeSession, setActiveSession] = useState<Session | null>(null);
@@ -28,29 +29,6 @@ export default function App() {
   const [bleDevice, setBleDevice] = useState<any | null>(null);
   const [bleCharacteristic, setBleCharacteristic] = useState<any | null>(null);
   const [isBleConnecting, setIsBleConnecting] = useState(false);
-  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
-  const [isCloudConnected, setIsCloudConnected] = useState(true);
-
-  const sendNotification = (title: string, body: string) => {
-    // In-app notification
-    showNotification(`${title.toUpperCase()}: ${body.toUpperCase()}`);
-
-    // System notification
-    if (notificationPermission === 'granted') {
-      try {
-        navigator.serviceWorker.ready.then(registration => {
-          registration.showNotification(title, {
-            body,
-            icon: 'https://lh3.googleusercontent.com/d/1JB1msv8nSU3u--ywu_bAhKEhKar-94Vb',
-            vibrate: [200, 100, 200],
-            tag: 'solar-synergy-update'
-          });
-        });
-      } catch (e) {
-        new Notification(title, { body });
-      }
-    }
-  };
 
   const showNotification = (msg: string) => {
     setNotification(msg);
@@ -58,6 +36,7 @@ export default function App() {
   };
 
   const connectBluetooth = async () => {
+    if (typeof window === 'undefined') return;
     if (!(navigator as any).bluetooth) {
       const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
       showNotification(isIOS ? "USE BLUEFY APP ON IOS" : "BROWSER NOT SUPPORTED");
@@ -83,18 +62,18 @@ export default function App() {
       if (characteristic) {
         setBleDevice(device);
         setBleCharacteristic(characteristic);
-        sendNotification("Hub Connected", "Your charging hub is now paired and ready.");
+        showNotification("HUB PAIRED SUCCESSFULLY");
         
         device.addEventListener('gattserverdisconnected', () => {
           setBleDevice(null);
           setBleCharacteristic(null);
-          sendNotification("Hub Disconnected", "Connection to the charging hub was lost.");
+          showNotification("HUB DISCONNECTED");
         });
       }
     } catch (error: any) {
       console.error("BLE Error Detail:", error);
       if (error.name === 'NotFoundError') {
-        sendNotification("Connection Cancelled", "Hub pairing was not completed.");
+        showNotification("DEVICE NOT FOUND/CANCELLED");
       } else if (error.name === 'SecurityError') {
         showNotification("SECURITY BLOCK (USE HTTPS)");
       } else if (error.name === 'NotAllowedError') {
@@ -113,15 +92,16 @@ export default function App() {
     setBleCharacteristic(null);
   };
 
-  const sendBleCommand = async (command: 'UNLOCK' | 'LOCK') => {
+  const sendBleCommand = async (command: 'UNLOCK' | 'LOCK', userId?: string) => {
     if (!bleCharacteristic || !bleDevice?.gatt?.connected) {
       showNotification("HUB NOT CONNECTED");
       return false;
     }
 
     try {
+      const payload = userId ? `${command}:${userId}` : command;
       const encoder = new TextEncoder();
-      const data = encoder.encode(command);
+      const data = encoder.encode(payload);
       
       if (bleCharacteristic.writeValueWithResponse) {
         await bleCharacteristic.writeValueWithResponse(data);
@@ -129,6 +109,7 @@ export default function App() {
         await bleCharacteristic.writeValue(data);
       }
       
+      console.log(`Hardware Command: ${command} by User: ${userId || 'Anonymous'}`);
       return true;
     } catch (error: any) {
       console.error("BLE Write Error:", error);
@@ -143,34 +124,7 @@ export default function App() {
   };
 
   useEffect(() => {
-    const checkConnectivity = async () => {
-      try {
-        const res = await fetch('/api/status');
-        if (!res.ok) throw new Error();
-        if (!isCloudConnected) {
-          setIsCloudConnected(true);
-          sendNotification("System Online", "Cloud bridge connectivity restored.");
-        }
-      } catch (e) {
-        if (isCloudConnected) {
-          setIsCloudConnected(false);
-          sendNotification("Connectivity Issue", "Lost connection to the cloud bridge. Real-time sync may be delayed.");
-        }
-      }
-    };
-
-    const interval = setInterval(checkConnectivity, 15000);
-    return () => clearInterval(interval);
-  }, [isCloudConnected]);
-
-  useEffect(() => {
-    if ("Notification" in window) {
-      Notification.requestPermission().then(permission => {
-        setNotificationPermission(permission);
-      });
-    }
-
-    if ("geolocation" in navigator) {
+    if (typeof window !== 'undefined' && "geolocation" in navigator) {
       const watchId = navigator.geolocation.watchPosition(
         (pos) => {
           setUserLocation({ 
@@ -192,22 +146,9 @@ export default function App() {
       interval = setInterval(() => {
         setActiveSession(prev => {
           if (!prev) return null;
-          
-          const newLevel = prev.chargeLevel + 0.1;
-          
-          // Notifications for milestones
-          if (Math.abs(newLevel - 80) < 0.05) {
-            sendNotification("Charging Update", "Battery reached 80%. Optimal for longevity.");
-          }
-          
-          if (newLevel >= 100) { 
-            sendNotification("Charging Complete", "Your vehicle is fully charged.");
-            endSession(prev); 
-            return null; 
-          }
-          
+          if (prev.chargeLevel >= 100) { endSession(prev); return null; }
           const costInc = prev.mode === 'fast' ? 0.05 : 0;
-          return { ...prev, chargeLevel: newLevel, cost: prev.cost + costInc, timeElapsed: prev.timeElapsed + 1 };
+          return { ...prev, chargeLevel: prev.chargeLevel + 0.1, cost: prev.cost + costInc, timeElapsed: prev.timeElapsed + 1 };
         });
       }, 1000);
     }
@@ -219,11 +160,10 @@ export default function App() {
     
     const locked = await sendBleCommand('LOCK');
     if (!locked && bleCharacteristic) {
-      sendNotification("Hub Issue", "Failed to lock the charging hub. Please check connection.");
+      showNotification("WARNING: HUB FAILED TO LOCK");
     }
     
     setWalletBalance(p => p - preAuth);
-    sendNotification("Charging Started", `Session active at ${selectedStation!.name}`);
     setActiveSession({ 
       station: selectedStation!, 
       mode, slotId, startTime: new Date(), status: 'charging', chargeLevel: 24, cost: 0, preAuthAmount: preAuth, durationLimit: duration, timeElapsed: 0, 
@@ -277,11 +217,7 @@ export default function App() {
         
         {view !== 'charging' && view !== 'assistant' && (
           <div className="shrink-0 w-full bg-white shadow-sm border-b border-gray-100 relative z-50">
-             <Header 
-               walletBalance={walletBalance} 
-               onProfileClick={() => setView('profile')} 
-               isCloudConnected={isCloudConnected} 
-             />
+             <Header walletBalance={walletBalance} onProfileClick={() => setView('profile')} />
           </div>
         )}
 

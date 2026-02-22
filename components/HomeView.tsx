@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { MapPin, Crosshair, CalendarClock, Zap, ArrowRight, Sun, Leaf, X, Star, Clock, Info } from 'lucide-react';
+import { MapPin, Crosshair, CalendarClock, Zap, ArrowRight, Sun, Leaf, X, Star, Clock, Info, Search } from 'lucide-react';
 import { Station, UserLocation } from '../types';
 import { PRICING } from '../constants';
 
@@ -14,6 +14,16 @@ interface HomeViewProps {
 
 export const HomeView: React.FC<HomeViewProps> = ({ userLocation, handleLocateMe, stations, onBookStation, onPrebook }) => {
   const [detailStation, setDetailStation] = useState<Station | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredStations = useMemo(() => {
+    if (!searchQuery.trim()) return stations;
+    const query = searchQuery.toLowerCase();
+    return stations.filter(station => 
+      station.name.toLowerCase().includes(query) || 
+      station.address.toLowerCase().includes(query)
+    );
+  }, [stations, searchQuery]);
 
   // Accurate Distance Calculation using Haversine formula
   const calculateDistance = (lat1: number, lon1: number, stationCoords: string) => {
@@ -62,6 +72,28 @@ export const HomeView: React.FC<HomeViewProps> = ({ userLocation, handleLocateMe
 
        {/* List of Hubs */}
        <div className="max-w-4xl mx-auto w-full px-4 sm:px-6 py-6 relative z-10 space-y-8">
+          {/* Search Bar */}
+          <div className="relative group">
+            <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none">
+              <Search size={18} className="text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search by hub name or address..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-white border border-gray-100 rounded-[2rem] py-5 pl-14 pr-6 text-sm font-bold text-gray-700 shadow-[0_8px_30px_rgb(0,0,0,0.04)] focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 transition-all placeholder:text-gray-300"
+            />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery('')}
+                className="absolute inset-y-0 right-6 flex items-center text-gray-300 hover:text-gray-500 transition-colors"
+              >
+                <X size={18} />
+              </button>
+            )}
+          </div>
+
           <div className="space-y-5">
              <div className="flex items-center justify-between px-2">
                <div>
@@ -76,74 +108,90 @@ export const HomeView: React.FC<HomeViewProps> = ({ userLocation, handleLocateMe
                )}
              </div>
              
-             {stations.map(station => {
-                const displayDistance = userLocation 
-                  ? calculateDistance(userLocation.lat, userLocation.lng, station.coordinates)
-                  : "Locating..."; 
+             {filteredStations.length > 0 ? (
+               filteredStations.map(station => {
+                  const displayDistance = userLocation 
+                    ? calculateDistance(userLocation.lat, userLocation.lng, station.coordinates)
+                    : "Locating..."; 
 
-                const isActive = station.status === 'Active';
+                  const isActive = station.status === 'Active';
 
-                return (
-                  <div key={station.id} className="bg-white rounded-[3rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100/80 overflow-hidden hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] transition-all duration-500 group">
-                    <div className="p-8">
-                        {/* Hub Identity & Slots */}
-                        <div className="flex justify-between items-start mb-8">
-                          <div className="space-y-2">
-                              <h3 className="text-2xl font-black text-gray-900 tracking-tighter leading-none group-hover:text-emerald-700 transition-colors">
-                                {station.name}
-                              </h3>
-                              <div className="flex items-center gap-2">
-                                <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${isActive ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
-                                    <div className={`w-1 h-1 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-rose-500'} animate-pulse`} />
-                                    {station.status}
+                  return (
+                    <div key={station.id} className="bg-white rounded-[3rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100/80 overflow-hidden hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] transition-all duration-500 group">
+                      <div className="p-8">
+                          {/* Hub Identity & Slots */}
+                          <div className="flex justify-between items-start mb-8">
+                            <div className="space-y-2">
+                                <h3 className="text-2xl font-black text-gray-900 tracking-tighter leading-none group-hover:text-emerald-700 transition-colors">
+                                  {station.name}
+                                </h3>
+                                <div className="flex items-center gap-2">
+                                  <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${isActive ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+                                      <div className={`w-1 h-1 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-rose-500'} animate-pulse`} />
+                                      {station.status}
+                                  </div>
+                                  <div className="flex items-center gap-1 text-[10px] font-bold text-gray-400 bg-gray-50 px-2.5 py-1 rounded-full">
+                                      <MapPin size={10} className="text-emerald-500" />
+                                      {displayDistance}
+                                  </div>
                                 </div>
-                                <div className="flex items-center gap-1 text-[10px] font-bold text-gray-400 bg-gray-50 px-2.5 py-1 rounded-full">
-                                    <MapPin size={10} className="text-emerald-500" />
-                                    {displayDistance}
-                                </div>
-                              </div>
+                            </div>
+                            
+                            <div className="flex flex-col items-center justify-center bg-gray-50 w-16 h-16 rounded-[1.5rem] border border-gray-100 shadow-inner group-hover:bg-emerald-50 group-hover:border-emerald-100 transition-colors">
+                                <span className="text-2xl font-black text-gray-900 leading-none group-hover:text-emerald-700">{station.slots}</span>
+                                <span className="text-[7px] font-black text-gray-400 uppercase tracking-widest mt-1">Ready</span>
+                            </div>
                           </div>
                           
-                          <div className="flex flex-col items-center justify-center bg-gray-50 w-16 h-16 rounded-[1.5rem] border border-gray-100 shadow-inner group-hover:bg-emerald-50 group-hover:border-emerald-100 transition-colors">
-                              <span className="text-2xl font-black text-gray-900 leading-none group-hover:text-emerald-700">{station.slots}</span>
-                              <span className="text-[7px] font-black text-gray-400 uppercase tracking-widest mt-1">Ready</span>
-                          </div>
-                        </div>
-                        
-                        {/* Primary Actions */}
-                        <div className="flex flex-col gap-3">
-                           <div className="grid grid-cols-2 gap-3">
-                             <button 
-                                 onClick={() => onPrebook(station)}
-                                 className="bg-gray-50 border border-gray-100 text-gray-900 text-[10px] font-black py-4 rounded-[1.5rem] transition-all flex items-center justify-center gap-2 uppercase tracking-widest hover:bg-gray-100 active:scale-95"
-                             >
-                                 <CalendarClock size={16} />
-                                 Reserve
-                             </button>
-                             <button 
-                                 onClick={() => onBookStation(station)}
-                                 className="bg-gradient-to-br from-emerald-500 to-emerald-700 text-white text-[10px] font-black py-4 rounded-[1.5rem] transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-200/50 hover:shadow-emerald-300/60 active:scale-95 uppercase tracking-widest"
-                             >
-                                 <Zap size={16} fill="currentColor" />
-                                 Charge Now
-                             </button>
-                           </div>
+                          {/* Primary Actions */}
+                          <div className="flex flex-col gap-3">
+                             <div className="grid grid-cols-2 gap-3">
+                               <button 
+                                   onClick={() => onPrebook(station)}
+                                   className="bg-gray-50 border border-gray-100 text-gray-900 text-[10px] font-black py-4 rounded-[1.5rem] transition-all flex items-center justify-center gap-2 uppercase tracking-widest hover:bg-gray-100 active:scale-95"
+                               >
+                                   <CalendarClock size={16} />
+                                   Reserve
+                               </button>
+                               <button 
+                                   onClick={() => onBookStation(station)}
+                                   className="bg-gradient-to-br from-emerald-500 to-emerald-700 text-white text-[10px] font-black py-4 rounded-[1.5rem] transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-200/50 hover:shadow-emerald-300/60 active:scale-95 uppercase tracking-widest"
+                               >
+                                   <Zap size={16} fill="currentColor" />
+                                   Charge Now
+                               </button>
+                             </div>
 
-                           <button 
-                               onClick={() => setDetailStation(station)}
-                               className="w-full flex items-center justify-between px-6 py-3.5 bg-gray-50/50 rounded-2xl hover:bg-emerald-50 transition-colors group/link"
-                           >
-                               <div className="flex items-center gap-3">
-                                  <Info size={14} className="text-gray-400 group-hover/link:text-emerald-500" />
-                                  <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] group-hover/link:text-emerald-700">Detailed View & Pricing</span>
-                               </div>
-                               <ArrowRight size={14} className="text-gray-300 group-hover/link:text-emerald-500 group-hover/link:translate-x-1 transition-all" />
-                           </button>
-                        </div>
+                             <button 
+                                 onClick={() => setDetailStation(station)}
+                                 className="w-full flex items-center justify-between px-6 py-3.5 bg-gray-50/50 rounded-2xl hover:bg-emerald-50 transition-colors group/link"
+                             >
+                                 <div className="flex items-center gap-3">
+                                    <Info size={14} className="text-gray-400 group-hover/link:text-emerald-500" />
+                                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] group-hover/link:text-emerald-700">Detailed View & Pricing</span>
+                                 </div>
+                                 <ArrowRight size={14} className="text-gray-300 group-hover/link:text-emerald-500 group-hover/link:translate-x-1 transition-all" />
+                             </button>
+                          </div>
+                      </div>
                     </div>
-                  </div>
-                );
-             })}
+                  );
+               })
+             ) : (
+               <div className="bg-white rounded-[3rem] p-12 text-center border border-gray-100 shadow-sm">
+                 <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6 text-gray-300">
+                   <Search size={32} />
+                 </div>
+                 <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight">No Hubs Found</h3>
+                 <p className="text-xs font-bold text-gray-400 mt-2">Try searching for a different name or address</p>
+                 <button 
+                   onClick={() => setSearchQuery('')}
+                   className="mt-8 text-[10px] font-black text-emerald-600 uppercase tracking-widest hover:text-emerald-700 transition-colors"
+                 >
+                   Clear Search
+                 </button>
+               </div>
+             )}
           </div>
        </div>
 
