@@ -193,10 +193,11 @@ export default function App() {
         setActiveSession(prev => {
           if (!prev) return null;
           
-          const newLevel = prev.chargeLevel + 0.1;
+          const increment = prev.mode === 'fast' ? 1.5 : 0.8;
+          const newLevel = prev.chargeLevel + increment;
           
           // Notifications for milestones
-          if (Math.abs(newLevel - 80) < 0.05) {
+          if (prev.chargeLevel < 80 && newLevel >= 80) {
             sendNotification("Charging Update", "Battery reached 80%. Optimal for longevity.");
           }
           
@@ -206,8 +207,8 @@ export default function App() {
             return null; 
           }
           
-          const costInc = prev.mode === 'fast' ? 0.05 : 0;
-          return { ...prev, chargeLevel: newLevel, cost: prev.cost + costInc, timeElapsed: prev.timeElapsed + 1 };
+          const costInc = prev.mode === 'fast' ? 0.05 : 0.01;
+          return { ...prev, chargeLevel: Math.min(newLevel, 100), cost: prev.cost + costInc, timeElapsed: prev.timeElapsed + 1 };
         });
       }, 1000);
     }
