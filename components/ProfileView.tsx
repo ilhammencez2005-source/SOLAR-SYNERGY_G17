@@ -92,9 +92,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               </button>
 
               {showQr && (
-                <div className="mt-8 bg-white rounded-[3rem] p-2 text-center animate-fade-in-down shadow-2xl overflow-hidden relative border border-pink-50 max-w-[280px] mx-auto">
-                  <div className="border-[2px] border-[#ED008C] rounded-[2.5rem] p-3 bg-white">
-                    <div className="aspect-square flex items-center justify-center overflow-hidden">
+                <div className="mt-8 bg-[#f1f1f3] rounded-[3rem] p-4 text-center animate-fade-in-down shadow-2xl overflow-hidden relative border border-white/20 max-w-[260px] mx-auto group">
+                  {/* Subtle Pink Glow */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  
+                  <div className="relative z-10">
+                    <div className="aspect-square flex items-center justify-center overflow-hidden rounded-[2rem]">
                       <img 
                         src="https://lh3.googleusercontent.com/d/1usUmakfqoX6yrVG_BQucVdmQx4jDpxoO" 
                         alt="DuitNow QR" 
@@ -107,15 +110,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                         }}
                       />
                     </div>
-                  </div>
-                  
-                  <div className="py-4 space-y-1">
-                    <div className="flex items-center justify-center gap-2 mb-1">
-                      <div className="h-px w-6 bg-pink-100"></div>
-                      <p className="text-gray-900 font-black text-[9px] uppercase tracking-[0.2em]">Top Up Wallet</p>
-                      <div className="h-px w-6 bg-pink-100"></div>
+                    
+                    <div className="mt-4 pt-4 border-t border-black/5 space-y-1">
+                      <p className="text-gray-400 font-black text-[8px] uppercase tracking-[0.3em]">Top Up Wallet</p>
+                      <p className="text-[#ED008C] text-[9px] uppercase font-black tracking-widest px-2">ILHAMMENCEZ BIN MOHD RASYIDI</p>
                     </div>
-                    <p className="text-[#ED008C] text-[8px] uppercase font-black tracking-widest px-4">ILHAMMENCEZ BIN MOHD RASYIDI</p>
                   </div>
                 </div>
               )}
