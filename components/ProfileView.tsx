@@ -236,7 +236,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                       <div>
                         <p className="font-black text-gray-900 uppercase tracking-tight">WiFi Hub (ESP8266)</p>
                         <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">
-                          {isWifiConnected ? "Hub Online" : "Hub Offline"}
+                          {isWifiConnected ? "Hub Online" : "Hub Offline / Standby"}
                         </p>
                       </div>
                     </div>
@@ -256,21 +256,30 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     </div>
                   </div>
 
-                  {isWifiConnected && (
-                    <div className="grid grid-cols-2 gap-4">
+                  {wifiIp && (
+                    <div className="space-y-4 animate-fade-in-down">
+                      <div className="grid grid-cols-2 gap-4">
+                        <button 
+                          onClick={() => onTestCommand('LOCK')}
+                          className="bg-gray-900 text-white py-5 rounded-2xl flex flex-col items-center justify-center gap-2 active:scale-95 transition-all shadow-xl hover:bg-black group"
+                        >
+                          <Lock size={22} className="group-active:scale-110 transition-transform" />
+                          <span className="text-[9px] font-black uppercase tracking-[0.2em]">TEST LOCK</span>
+                        </button>
+                        <button 
+                          onClick={() => onTestCommand('UNLOCK')}
+                          className="bg-emerald-600 text-white py-5 rounded-2xl flex flex-col items-center justify-center gap-2 active:scale-95 transition-all shadow-xl hover:bg-emerald-700 group"
+                        >
+                          <Unlock size={22} className="group-active:scale-110 transition-transform" />
+                          <span className="text-[9px] font-black uppercase tracking-[0.2em]">TEST UNLOCK</span>
+                        </button>
+                      </div>
+
                       <button 
-                        onClick={() => onTestCommand('LOCK')}
-                        className="bg-gray-900 text-white py-5 rounded-2xl flex flex-col items-center justify-center gap-2 active:scale-95 transition-all shadow-xl hover:bg-black group"
+                        onClick={() => onTestCommand('LOCK')} // This just triggers a fetch to the IP
+                        className="w-full py-4 rounded-[2rem] border-2 border-emerald-500 text-emerald-600 font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all"
                       >
-                        <Lock size={22} className="group-active:scale-110 transition-transform" />
-                        <span className="text-[9px] font-black uppercase tracking-[0.2em]">TEST LOCK</span>
-                      </button>
-                      <button 
-                        onClick={() => onTestCommand('UNLOCK')}
-                        className="bg-emerald-600 text-white py-5 rounded-2xl flex flex-col items-center justify-center gap-2 active:scale-95 transition-all shadow-xl hover:bg-emerald-700 group"
-                      >
-                        <Unlock size={22} className="group-active:scale-110 transition-transform" />
-                        <span className="text-[9px] font-black uppercase tracking-[0.2em]">TEST UNLOCK</span>
+                        CHECK HUB CONNECTION
                       </button>
                     </div>
                   )}
