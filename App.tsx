@@ -29,6 +29,11 @@ export default function App() {
   const [bleDevice, setBleDevice] = useState<any | null>(null);
   const [bleCharacteristic, setBleCharacteristic] = useState<any | null>(null);
   const [isBleConnecting, setIsBleConnecting] = useState(false);
+  
+  // WiFi State
+  const [connectionMode, setConnectionMode] = useState<'ble' | 'wifi'>('ble');
+  const [wifiIp, setWifiIp] = useState<string>('');
+  const [isWifiConnected, setIsWifiConnected] = useState(false);
 
   const handleOccupancyUpdate = (event: any) => {
     const value = new TextDecoder().decode(event.target.value);
@@ -145,6 +150,59 @@ export default function App() {
     }
   };
 
+  const sendWifiCommand = async (command: 'UNLOCK' | 'LOCK') => {
+    if (!wifiIp) {
+      showNotification("IP ADDRESS REQUIRED");
+      return false;
+    }
+    try {
+      const response = await fetch(`http://${wifiIp}/${command.toLowerCase()}`, {
+        method: 'GET',
+        mode: 'no-cors' // ESP8266 might not handle CORS well
+      });
+      setIsWifiConnected(true);
+      return true;
+    } catch (error) {
+      console.error("WiFi Error:", error);
+      showNotification("WIFI HUB UNREACHABLE");
+      return false;
+    }
+  };
+
+  const sendCommand = async (command: 'UNLOCK' | 'LOCK') => {
+    if (connectionMode === 'ble') {
+      return await sendBleCommand(command);
+    } else {
+      return await sendWifiCommand(command);
+    }
+  };
+
+  // WiFi Status Polling
+  useEffect(() => {
+    let interval: any;
+    if (connectionMode === 'wifi' && wifiIp) {
+      interval = setInterval(async () => {
+        try {
+          const res = await fetch(`http://${wifiIp}/status`);
+          const data = await res.text();
+          if (data.includes("OCCUPIED") || data.includes("AVAILABLE")) {
+            const isOccupied = data.includes("OCCUPIED");
+            setStations(prev => prev.map(s => {
+              if (s.name === "Village 4") {
+                return { ...s, status: isOccupied ? "Occupied" : "Active", slots: isOccupied ? 0 : 1 };
+              }
+              return s;
+            }));
+            setIsWifiConnected(true);
+          }
+        } catch (e) {
+          setIsWifiConnected(false);
+        }
+      }, 3000);
+    }
+    return () => clearInterval(interval);
+  }, [connectionMode, wifiIp]);
+
   useEffect(() => {
     if ("geolocation" in navigator) {
       const watchId = navigator.geolocation.watchPosition(
@@ -188,8 +246,8 @@ export default function App() {
   const startCharging = async (mode: ChargingMode, slotId: string, duration: number | 'full', preAuth: number) => {
     if (preAuth > walletBalance) return showNotification("INSUFFICIENT CREDITS");
     
-    const locked = await sendBleCommand('LOCK');
-    if (!locked && bleCharacteristic) {
+    const locked = await sendCommand('LOCK');
+    if (!locked && (bleCharacteristic || wifiIp)) {
       showNotification("WARNING: HUB FAILED TO LOCK");
     }
     
@@ -205,7 +263,7 @@ export default function App() {
   const endSession = async (cur = activeSession) => {
     if (!cur) return;
     
-    await sendBleCommand('UNLOCK');
+    await sendCommand('UNLOCK');
 
     const refund = cur.preAuthAmount - cur.cost;
     const energy = cur.cost > 0 ? cur.cost / 1.2 : 4.5; 
@@ -269,9 +327,9 @@ export default function App() {
               activeSession={activeSession} 
               toggleLock={() => {}} 
               endSession={() => endSession()} 
-              isBleConnected={!!bleCharacteristic}
+              isBleConnected={connectionMode === 'ble' ? !!bleCharacteristic : isWifiConnected}
               isBleConnecting={isBleConnecting}
-              onConnectBle={connectBluetooth}
+              onConnectBle={connectionMode === 'ble' ? connectBluetooth : () => {}}
             />
           )}
           {view === 'history' && <HistoryView history={chargingHistory} onClearHistory={() => setChargingHistory([])} />}
@@ -283,7 +341,12 @@ export default function App() {
               bleDeviceName={bleDevice?.name}
               onConnectBle={connectBluetooth}
               onDisconnectBle={disconnectBluetooth}
-              onTestCommand={sendBleCommand}
+              onTestCommand={sendCommand}
+              connectionMode={connectionMode}
+              setConnectionMode={setConnectionMode}
+              wifiIp={wifiIp}
+              setWifiIp={setWifiIp}
+              isWifiConnected={isWifiConnected}
             />
           )}
           {view === 'assistant' && (

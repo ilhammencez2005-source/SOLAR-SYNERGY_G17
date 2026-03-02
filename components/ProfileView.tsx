@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { User, Wallet, ShieldCheck, Bluetooth, Loader2, ChevronRight, Zap, QrCode, Lock, Unlock, AlertCircle, Info } from 'lucide-react';
+import { User, Wallet, ShieldCheck, Bluetooth, Loader2, ChevronRight, Zap, QrCode, Lock, Unlock, AlertCircle, Info, Wifi, Globe } from 'lucide-react';
 
 interface ProfileViewProps {
   walletBalance: number;
@@ -10,6 +10,11 @@ interface ProfileViewProps {
   onConnectBle: () => void;
   onDisconnectBle: () => void;
   onTestCommand: (cmd: 'LOCK' | 'UNLOCK') => void;
+  connectionMode: 'ble' | 'wifi';
+  setConnectionMode: (mode: 'ble' | 'wifi') => void;
+  wifiIp: string;
+  setWifiIp: (ip: string) => void;
+  isWifiConnected: boolean;
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({ 
@@ -19,7 +24,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   bleDeviceName, 
   onConnectBle,
   onDisconnectBle,
-  onTestCommand
+  onTestCommand,
+  connectionMode,
+  setConnectionMode,
+  wifiIp,
+  setWifiIp,
+  isWifiConnected
 }) => {
   const [showQr, setShowQr] = useState(false);
   const [activeTab, setActiveTab] = useState<'wallet' | 'hub' | 'about'>('wallet');
@@ -129,72 +139,149 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.3em]">Hardware Link & Testing</h3>
               </div>
               
-              {!isBluetoothSupported && (
-                <div className="bg-rose-50 border border-rose-100 p-6 rounded-[2.5rem] flex items-center gap-4 text-rose-700 mb-4">
-                  <AlertCircle className="shrink-0" size={24} />
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest">Browser Not Supported</p>
-                    <p className="text-[9px] font-bold mt-1 leading-tight uppercase">iPhone users must use <span className="underline">Bluefy</span> app.</p>
-                  </div>
-                </div>
-              )}
-
-              <div className="bg-white rounded-[3rem] p-8 border border-gray-100 shadow-sm space-y-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className={`p-4 rounded-2xl ${isBleConnected ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100 text-gray-400'}`}>
-                      <Bluetooth size={24} className={isBleConnecting ? 'animate-spin' : ''} />
+              {/* Connection Mode Selector */}
+              <div className="flex bg-gray-100 p-1 rounded-2xl gap-1 mb-4">
+                <button 
+                  onClick={() => setConnectionMode('ble')}
+                  className={`flex-1 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${connectionMode === 'ble' ? 'bg-white text-emerald-600 shadow-sm' : 'text-gray-400'}`}
+                >
+                  <Bluetooth size={14} />
+                  Bluetooth
+                </button>
+                <button 
+                  onClick={() => setConnectionMode('wifi')}
+                  className={`flex-1 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${connectionMode === 'wifi' ? 'bg-white text-emerald-600 shadow-sm' : 'text-gray-400'}`}
+                >
+                  <Wifi size={14} />
+                  WiFi (ESP8266)
+                </button>
+              </div>
+              
+              {connectionMode === 'ble' ? (
+                <>
+                  {!isBluetoothSupported && (
+                    <div className="bg-rose-50 border border-rose-100 p-6 rounded-[2.5rem] flex items-center gap-4 text-rose-700 mb-4">
+                      <AlertCircle className="shrink-0" size={24} />
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest">Browser Not Supported</p>
+                        <p className="text-[9px] font-bold mt-1 leading-tight uppercase">iPhone users must use <span className="underline">Bluefy</span> app.</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-black text-gray-900 uppercase tracking-tight">Hub Link</p>
-                      <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">
-                        {isBleConnected ? `Linked: ${bleDeviceName || "SolarSynergyHub"}` : "Bluetooth Standby"}
-                      </p>
+                  )}
+
+                  <div className="bg-white rounded-[3rem] p-8 border border-gray-100 shadow-sm space-y-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className={`p-4 rounded-2xl ${isBleConnected ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100 text-gray-400'}`}>
+                          <Bluetooth size={24} className={isBleConnecting ? 'animate-spin' : ''} />
+                        </div>
+                        <div>
+                          <p className="font-black text-gray-900 uppercase tracking-tight">Hub Link</p>
+                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">
+                            {isBleConnected ? `Linked: ${bleDeviceName || "SolarSynergyHub"}` : "Bluetooth Standby"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {isBleConnected && (
+                      <div className="grid grid-cols-2 gap-4">
+                        <button 
+                          onClick={() => onTestCommand('LOCK')}
+                          className="bg-gray-900 text-white py-5 rounded-2xl flex flex-col items-center justify-center gap-2 active:scale-95 transition-all shadow-xl hover:bg-black group"
+                        >
+                          <Lock size={22} className="group-active:scale-110 transition-transform" />
+                          <span className="text-[9px] font-black uppercase tracking-[0.2em]">TEST LOCK</span>
+                        </button>
+                        <button 
+                          onClick={() => onTestCommand('UNLOCK')}
+                          className="bg-emerald-600 text-white py-5 rounded-2xl flex flex-col items-center justify-center gap-2 active:scale-95 transition-all shadow-xl hover:bg-emerald-700 group"
+                        >
+                          <Unlock size={22} className="group-active:scale-110 transition-transform" />
+                          <span className="text-[9px] font-black uppercase tracking-[0.2em]">TEST UNLOCK</span>
+                        </button>
+                      </div>
+                    )}
+
+                    <div className="pt-2">
+                      {isBleConnected ? (
+                        <button 
+                          onClick={onDisconnectBle}
+                          className="w-full py-5 rounded-[2rem] border-2 border-rose-500 text-rose-600 font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all"
+                        >
+                          UNLINK HUB
+                        </button>
+                      ) : (
+                        <div className="space-y-3">
+                          <button 
+                            onClick={onConnectBle}
+                            disabled={isBleConnecting || !isBluetoothSupported}
+                            className="w-full bg-slate-900 text-white py-5 rounded-[2rem] font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-3 active:scale-95 shadow-xl transition-all disabled:opacity-30"
+                          >
+                            {isBleConnecting ? <Loader2 size={16} className="animate-spin" /> : <Bluetooth size={16} />}
+                            {isBleConnecting ? "LINKING..." : "LINK WITH HUB"}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
-
-                {isBleConnected && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <button 
-                      onClick={() => onTestCommand('LOCK')}
-                      className="bg-gray-900 text-white py-5 rounded-2xl flex flex-col items-center justify-center gap-2 active:scale-95 transition-all shadow-xl hover:bg-black group"
-                    >
-                      <Lock size={22} className="group-active:scale-110 transition-transform" />
-                      <span className="text-[9px] font-black uppercase tracking-[0.2em]">TEST LOCK</span>
-                    </button>
-                    <button 
-                      onClick={() => onTestCommand('UNLOCK')}
-                      className="bg-emerald-600 text-white py-5 rounded-2xl flex flex-col items-center justify-center gap-2 active:scale-95 transition-all shadow-xl hover:bg-emerald-700 group"
-                    >
-                      <Unlock size={22} className="group-active:scale-110 transition-transform" />
-                      <span className="text-[9px] font-black uppercase tracking-[0.2em]">TEST UNLOCK</span>
-                    </button>
+                </>
+              ) : (
+                <div className="bg-white rounded-[3rem] p-8 border border-gray-100 shadow-sm space-y-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-4">
+                      <div className={`p-4 rounded-2xl ${isWifiConnected ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100 text-gray-400'}`}>
+                        <Wifi size={24} />
+                      </div>
+                      <div>
+                        <p className="font-black text-gray-900 uppercase tracking-tight">WiFi Hub (ESP8266)</p>
+                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">
+                          {isWifiConnected ? "Hub Online" : "Hub Offline"}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="text-[8px] font-black text-gray-400 uppercase tracking-widest ml-2">Hub IP Address</label>
+                      <div className="relative">
+                        <Globe className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={16} />
+                        <input 
+                          type="text" 
+                          placeholder="e.g. 192.168.1.100"
+                          value={wifiIp}
+                          onChange={(e) => setWifiIp(e.target.value)}
+                          className="w-full bg-gray-50 border border-gray-100 rounded-2xl py-4 pl-12 pr-4 text-xs font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                        />
+                      </div>
+                    </div>
                   </div>
-                )}
 
-                <div className="pt-2">
-                  {isBleConnected ? (
-                    <button 
-                      onClick={onDisconnectBle}
-                      className="w-full py-5 rounded-[2rem] border-2 border-rose-500 text-rose-600 font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all"
-                    >
-                      UNLINK HUB
-                    </button>
-                  ) : (
-                    <div className="space-y-3">
+                  {isWifiConnected && (
+                    <div className="grid grid-cols-2 gap-4">
                       <button 
-                        onClick={onConnectBle}
-                        disabled={isBleConnecting || !isBluetoothSupported}
-                        className="w-full bg-slate-900 text-white py-5 rounded-[2rem] font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-3 active:scale-95 shadow-xl transition-all disabled:opacity-30"
+                        onClick={() => onTestCommand('LOCK')}
+                        className="bg-gray-900 text-white py-5 rounded-2xl flex flex-col items-center justify-center gap-2 active:scale-95 transition-all shadow-xl hover:bg-black group"
                       >
-                        {isBleConnecting ? <Loader2 size={16} className="animate-spin" /> : <Bluetooth size={16} />}
-                        {isBleConnecting ? "LINKING..." : "LINK WITH HUB"}
+                        <Lock size={22} className="group-active:scale-110 transition-transform" />
+                        <span className="text-[9px] font-black uppercase tracking-[0.2em]">TEST LOCK</span>
+                      </button>
+                      <button 
+                        onClick={() => onTestCommand('UNLOCK')}
+                        className="bg-emerald-600 text-white py-5 rounded-2xl flex flex-col items-center justify-center gap-2 active:scale-95 transition-all shadow-xl hover:bg-emerald-700 group"
+                      >
+                        <Unlock size={22} className="group-active:scale-110 transition-transform" />
+                        <span className="text-[9px] font-black uppercase tracking-[0.2em]">TEST UNLOCK</span>
                       </button>
                     </div>
                   )}
+                  
+                  <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl">
+                    <p className="text-[8px] font-black text-amber-700 uppercase tracking-widest leading-relaxed">
+                      Note: Ensure your phone and ESP8266 are on the same WiFi network.
+                    </p>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         )}
