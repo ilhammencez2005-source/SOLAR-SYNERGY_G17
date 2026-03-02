@@ -276,6 +276,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                       </div>
 
                       <button 
+                        onClick={() => window.open(`http://${wifiIp}/status`, '_blank')}
+                        className="w-full py-4 rounded-[2rem] border-2 border-amber-500 text-amber-600 font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2"
+                      >
+                        <ShieldCheck size={14} />
+                        Authorize Hub (Fix Safari Error)
+                      </button>
+
+                      <button 
                         onClick={() => onTestCommand('LOCK')} // This just triggers a fetch to the IP
                         className="w-full py-4 rounded-[2rem] border-2 border-emerald-500 text-emerald-600 font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all"
                       >
