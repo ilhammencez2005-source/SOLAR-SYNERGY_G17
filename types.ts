@@ -22,19 +22,21 @@ export interface Station {
   features: string[];
 }
 
-export type ChargingMode = 'fast' | 'normal';
+export type ChargingMode = 'standard';
 
 export interface Session {
   station: Station;
   mode: ChargingMode;
   slotId: string;
   startTime: Date;
-  status: 'charging' | 'completed';
+  status: 'charging' | 'completed' | 'overstay';
   chargeLevel: number;
   cost: number;
+  overstayFee: number;
   preAuthAmount: number;
   durationLimit: number | 'full'; 
   timeElapsed: number;
+  completionTime?: Date;
   isLocked: boolean;
 }
 

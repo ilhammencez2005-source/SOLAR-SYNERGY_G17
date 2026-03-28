@@ -292,10 +292,19 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     </div>
                   )}
                   
-                  <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl">
+                  <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl space-y-3">
                     <p className="text-[8px] font-black text-amber-700 uppercase tracking-widest leading-relaxed">
                       Note: Ensure your phone and ESP8266 are on the same WiFi network.
                     </p>
+                    <div className="pt-2 border-t border-amber-200/50">
+                      <p className="text-[7px] font-black text-amber-600 uppercase tracking-[0.2em] mb-2">Troubleshooting:</p>
+                      <ul className="text-[7px] font-bold text-amber-700/80 space-y-1 list-disc pl-3 uppercase">
+                        <li>Use "Authorize Hub" button first</li>
+                        <li>Try "Add to Home Screen" trick</li>
+                        <li>Disable "Private Relay" in iCloud settings</li>
+                        <li>Disable "Limit IP Address Tracking" in WiFi settings</li>
+                      </ul>
+                    </div>
                   </div>
                 </div>
               )}

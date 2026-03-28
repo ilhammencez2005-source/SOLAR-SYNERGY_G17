@@ -9,7 +9,7 @@ import { ChargingSessionView } from './components/ChargingSessionView';
 import { GeminiAssistant } from './components/GeminiAssistant';
 import { HistoryView } from './components/HistoryView';
 import { ProfileView } from './components/ProfileView';
-import { STATIONS } from './constants';
+import { STATIONS, PRICING } from './constants';
 import { Station, Session, UserLocation, ViewState, ChargingMode, Receipt, ChargingHistoryItem } from './types';
 
 const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
@@ -156,10 +156,16 @@ export default function App() {
       return false;
     }
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+
       const response = await fetch(`http://${wifiIp}/${command.toLowerCase()}`, {
         method: 'GET',
-        mode: 'no-cors' // ESP8266 might not handle CORS well
+        signal: controller.signal,
+        mode: 'cors', // Use CORS since we added headers to ESP
+        cache: 'no-cache'
       });
+      clearTimeout(timeoutId);
       setIsWifiConnected(true);
       return true;
     } catch (error) {
@@ -183,7 +189,14 @@ export default function App() {
     if (connectionMode === 'wifi' && wifiIp) {
       interval = setInterval(async () => {
         try {
-          const res = await fetch(`http://${wifiIp}/status`);
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 2500);
+          const res = await fetch(`http://${wifiIp}/status`, { 
+            signal: controller.signal,
+            mode: 'cors',
+            cache: 'no-cache'
+          });
+          clearTimeout(timeoutId);
           const data = await res.text();
           if (data.includes("OCCUPIED") || data.includes("AVAILABLE")) {
             const isOccupied = data.includes("OCCUPIED");
@@ -196,9 +209,10 @@ export default function App() {
             setIsWifiConnected(true);
           }
         } catch (e) {
+          // Don't show notification on poll failure to avoid spam
           setIsWifiConnected(false);
         }
-      }, 3000);
+      }, 4000);
     }
     return () => clearInterval(interval);
   }, [connectionMode, wifiIp]);
@@ -222,21 +236,56 @@ export default function App() {
 
   useEffect(() => {
     let interval: any;
-    if (activeSession && activeSession.status === 'charging') {
+    if (activeSession) {
       interval = setInterval(() => {
         setActiveSession(prev => {
           if (!prev) return null;
           
-          const increment = prev.mode === 'fast' ? 1.5 : 0.8;
-          const newLevel = prev.chargeLevel + increment;
-          
-          if (newLevel >= 100) { 
-            endSession(prev); 
-            return null; 
+          if (prev.status === 'charging') {
+            const increment = 0.8; // Charge level increment
+            const newLevel = prev.chargeLevel + increment;
+            
+            // Calculate energy consumed in Wh (simulated)
+            // 3kW max power = 3000W. In 1 second, it's 3000 / 3600 = 0.833 Wh
+            const energyInc = (PRICING.maxPower / 3600) * 0.5; // Simulate slower for demo
+            const newCost = prev.cost + (energyInc * PRICING.rate);
+            
+            if (newLevel >= 100) { 
+              return { 
+                ...prev, 
+                chargeLevel: 100, 
+                cost: newCost, 
+                status: 'completed', 
+                completionTime: new Date() 
+              };
+            }
+            
+            return { 
+              ...prev, 
+              chargeLevel: Math.min(newLevel, 100), 
+              cost: newCost, 
+              timeElapsed: prev.timeElapsed + 1 
+            };
+          } else if (prev.status === 'completed' || prev.status === 'overstay') {
+            if (prev.completionTime) {
+              const now = new Date();
+              const diffMs = now.getTime() - prev.completionTime.getTime();
+              const diffMinutes = diffMs / (1000 * 60);
+              
+              // Overstay fee after 1 hour (60 minutes)
+              if (diffMinutes >= 60 && prev.status !== 'overstay') {
+                showNotification("OVERSTAY FEE APPLIED: RM 1.00");
+                return {
+                  ...prev,
+                  status: 'overstay',
+                  overstayFee: PRICING.overstayFee
+                };
+              }
+            }
+            return { ...prev, timeElapsed: prev.timeElapsed + 1 };
           }
           
-          const costInc = prev.mode === 'fast' ? 0.05 : 0.01;
-          return { ...prev, chargeLevel: Math.min(newLevel, 100), cost: prev.cost + costInc, timeElapsed: prev.timeElapsed + 1 };
+          return prev;
         });
       }, 1000);
     }
@@ -254,7 +303,7 @@ export default function App() {
     setWalletBalance(p => p - preAuth);
     setActiveSession({ 
       station: selectedStation!, 
-      mode, slotId, startTime: new Date(), status: 'charging', chargeLevel: 24, cost: 0, preAuthAmount: preAuth, durationLimit: duration, timeElapsed: 0, 
+      mode, slotId, startTime: new Date(), status: 'charging', chargeLevel: 24, cost: 0, overstayFee: 0, preAuthAmount: preAuth, durationLimit: duration, timeElapsed: 0, 
       isLocked: true 
     });
     setView('charging');
@@ -265,15 +314,16 @@ export default function App() {
     
     await sendCommand('UNLOCK');
 
-    const refund = cur.preAuthAmount - cur.cost;
-    const energy = cur.cost > 0 ? cur.cost / 1.2 : 4.5; 
+    const totalCost = cur.cost + cur.overstayFee;
+    const refund = cur.preAuthAmount - totalCost;
+    const energy = cur.cost / PRICING.rate; 
     setWalletBalance(p => p + refund);
     
     const historyItem: ChargingHistoryItem = {
       id: Date.now(),
       stationName: cur.station.name,
       date: new Date().toLocaleString(),
-      amount: cur.cost,
+      amount: totalCost,
       energy: energy,
       status: 'Completed'
     };
@@ -283,9 +333,9 @@ export default function App() {
       stationName: cur.station.name, 
       date: new Date().toLocaleString(), 
       duration: `${Math.floor(cur.timeElapsed / 60)}m`, 
-      totalEnergy: `${energy.toFixed(2)}kWh`, 
+      totalEnergy: `${energy.toFixed(2)}Wh`, 
       mode: cur.mode, 
-      cost: cur.cost, 
+      cost: totalCost, 
       paid: cur.preAuthAmount, 
       refund: refund 
     });

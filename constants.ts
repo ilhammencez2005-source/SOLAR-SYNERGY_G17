@@ -39,6 +39,7 @@ export const STATIONS: Station[] = [
 ];
 
 export const PRICING = {
-  fast: 1.20, // RM per kWh (Turbo Charge)
-  normal: 0,   // Free (Eco Charge)
+  rate: 0.15, // RM per Wh
+  overstayFee: 1.00, // RM after 1 hour of occupancy after charging
+  maxPower: 3000, // Watts (3kW)
 };

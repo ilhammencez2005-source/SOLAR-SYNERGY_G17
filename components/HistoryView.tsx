@@ -9,7 +9,7 @@ interface HistoryViewProps {
 }
 
 export const HistoryView: React.FC<HistoryViewProps> = ({ history, onClearHistory }) => {
-  const totalSaved = history.reduce((acc, item) => acc + (item.energy * 0.4), 0); // Assuming RM 0.4 saving vs commercial
+  const totalSaved = history.reduce((acc, item) => acc + (item.energy * 0.05), 0); // Assuming RM 0.05 saving vs commercial per Wh
   const totalEnergy = history.reduce((acc, item) => acc + item.energy, 0);
 
   return (
@@ -79,11 +79,11 @@ export const HistoryView: React.FC<HistoryViewProps> = ({ history, onClearHistor
                 <div className="flex items-center gap-6">
                   <div>
                     <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Energy</p>
-                    <p className="text-xs font-black text-gray-700">{item.energy.toFixed(1)} kWh</p>
+                    <p className="text-xs font-black text-gray-700">{item.energy.toFixed(1)} Wh</p>
                   </div>
                   <div>
                     <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Impact</p>
-                    <p className="text-xs font-black text-emerald-600">{(item.energy * 0.7).toFixed(1)}kg CO₂ saved</p>
+                    <p className="text-xs font-black text-emerald-600">{(item.energy * 0.0007).toFixed(2)}kg CO₂ saved</p>
                   </div>
                 </div>
                 <button className="p-2 bg-gray-50 rounded-xl text-gray-400 group-hover:text-emerald-600 transition-colors">
@@ -106,7 +106,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({ history, onClearHistor
             <p className="text-[9px] font-black uppercase tracking-widest text-emerald-400">Est. Total Saved</p>
           </div>
           <div>
-            <p className="text-3xl font-black tracking-tighter">{totalEnergy.toFixed(1)} kWh</p>
+            <p className="text-3xl font-black tracking-tighter">{totalEnergy.toFixed(1)} Wh</p>
             <p className="text-[9px] font-black uppercase tracking-widest text-emerald-400">Total Synergy</p>
           </div>
         </div>

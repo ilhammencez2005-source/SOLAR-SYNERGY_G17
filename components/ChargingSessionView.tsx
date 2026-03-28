@@ -22,7 +22,8 @@ export const ChargingSessionView: React.FC<ChargingSessionViewProps> = ({
   if (!activeSession) return <div className="p-10 text-center text-gray-500 font-black uppercase tracking-widest">No active session.</div>;
   
   const percentage = Math.round(activeSession.chargeLevel);
-  const isCompleted = activeSession.status === 'completed';
+  const isCompleted = activeSession.status === 'completed' || activeSession.status === 'overstay';
+  const isOverstay = activeSession.status === 'overstay';
 
   const handleEndSession = () => {
     // Visual sync with physical buzzer (2 sec)
@@ -38,9 +39,9 @@ export const ChargingSessionView: React.FC<ChargingSessionViewProps> = ({
       {/* Status Header */}
       <div className="flex flex-col items-center gap-3 py-2 relative">
          <div className="bg-white/90 backdrop-blur-md px-6 py-2.5 rounded-full border border-gray-100 shadow-sm flex items-center gap-2">
-            <div className={`w-2.5 h-2.5 rounded-full ${isCompleted ? 'bg-green-500' : 'bg-emerald-500 animate-pulse'}`}></div>
+            <div className={`w-2.5 h-2.5 rounded-full ${isOverstay ? 'bg-red-500 animate-pulse' : isCompleted ? 'bg-green-500' : 'bg-emerald-500 animate-pulse'}`}></div>
             <span className="text-[10px] font-black text-gray-800 uppercase tracking-[0.2em]">
-               {isCompleted ? "Session Done" : "Active Charge"}
+               {isOverstay ? "Overstay Fee Applied" : isCompleted ? "Session Done" : "Active Charge"}
             </span>
          </div>
          
@@ -71,12 +72,14 @@ export const ChargingSessionView: React.FC<ChargingSessionViewProps> = ({
                   fill="transparent" 
                   strokeDasharray="283%" 
                   strokeDashoffset={`${283 - (283 * percentage) / 100}%`} 
-                  className={`${isCompleted ? "text-green-500" : "text-emerald-500"} transition-all duration-1000 ease-in-out`} 
+                  className={`${isOverstay ? "text-red-500" : isCompleted ? "text-green-500" : "text-emerald-500"} transition-all duration-1000 ease-in-out`} 
                   strokeLinecap="round" 
                />
             </svg>
             <div className="absolute flex flex-col items-center justify-center text-center">
-               {isCompleted ? (
+               {isOverstay ? (
+                  <Power size={56} className="text-red-500 mb-2 animate-pulse" />
+               ) : isCompleted ? (
                   <CheckCircle2 size={56} className="text-green-500 mb-2 animate-bounce" />
                ) : (
                   <Zap size={56} className="mb-2 text-emerald-500 animate-pulse" fill="currentColor" />
@@ -99,11 +102,19 @@ export const ChargingSessionView: React.FC<ChargingSessionViewProps> = ({
             </div>
             <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col items-center">
                <span className="text-gray-400 text-[9px] font-black uppercase tracking-widest mb-1">Total Cost</span>
-               <span className="text-2xl font-black text-emerald-600 tracking-tighter">
-                  RM {activeSession.cost.toFixed(2)}
+               <span className={`text-2xl font-black tracking-tighter ${isOverstay ? 'text-red-500' : 'text-emerald-600'}`}>
+                  RM {(activeSession.cost + activeSession.overstayFee).toFixed(2)}
                </span>
             </div>
          </div>
+
+         {isOverstay && (
+           <div className="bg-red-50 border border-red-100 p-4 rounded-2xl text-center">
+              <p className="text-[9px] font-black text-red-600 uppercase tracking-widest">
+                Overstay Fee Applied: RM {activeSession.overstayFee.toFixed(2)}
+              </p>
+           </div>
+         )}
 
          <div className="pt-2">
              <button 
