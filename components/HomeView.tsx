@@ -54,7 +54,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ userLocation, handleLocateMe
        {/* Map View */}
        <div className="h-[32vh] min-h-[240px] bg-slate-200 w-full relative overflow-hidden shadow-inner">
           <iframe 
-             key={userLocation ? `${userLocation.lat}-${userLocation.lng}-${userLocation.timestamp}` : 'default-map'}
+             key={userLocation ? `${userLocation.lat.toFixed(4)}-${userLocation.lng.toFixed(4)}` : 'default-map'}
              width="100%" 
              height="100%" 
              frameBorder="0" 
@@ -62,6 +62,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ userLocation, handleLocateMe
              className="absolute inset-0 w-full h-full opacity-90 grayscale-[10%]"
              title="Map"
           ></iframe>
+          
           <button 
              onClick={handleLocateMe}
              className="absolute bottom-6 right-6 bg-white p-3.5 rounded-2xl shadow-2xl text-gray-700 z-10 active:scale-95 transition-all hover:bg-gray-50 border border-gray-100"
