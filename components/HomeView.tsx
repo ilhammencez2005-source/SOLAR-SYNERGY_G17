@@ -6,13 +6,14 @@ import { PRICING } from '../constants';
 
 interface HomeViewProps {
   userLocation: UserLocation | null;
+  mapCenter: {lat: number, lng: number} | null;
   handleLocateMe: () => void;
   stations: Station[];
   onBookStation: (station: Station) => void;
   onPrebook: (station: Station) => void;
 }
 
-export const HomeView: React.FC<HomeViewProps> = ({ userLocation, handleLocateMe, stations, onBookStation, onPrebook }) => {
+export const HomeView: React.FC<HomeViewProps> = ({ userLocation, mapCenter, handleLocateMe, stations, onBookStation, onPrebook }) => {
   const [detailStation, setDetailStation] = useState<Station | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -44,17 +45,15 @@ export const HomeView: React.FC<HomeViewProps> = ({ userLocation, handleLocateMe
   };
 
   const mapSrc = useMemo(() => {
-    return userLocation
-      ? `https://maps.google.com/maps?q=${userLocation.lat},${userLocation.lng}&hl=en&z=15&output=embed&iwloc=near`
-      : `https://maps.google.com/maps?q=4.3835,100.9638&hl=en&z=17&output=embed&iwloc=near`;
-  }, [userLocation?.lat, userLocation?.lng]);
+    const center = mapCenter || { lat: 4.3835, lng: 100.9638 };
+    return `https://maps.google.com/maps?q=${center.lat},${center.lng}&hl=en&z=17&output=embed&iwloc=near`;
+  }, [mapCenter?.lat, mapCenter?.lng]);
 
   return (
     <div className="bg-gray-50 min-h-full flex flex-col pb-40">
        {/* Map View */}
        <div className="h-[32vh] min-h-[240px] bg-slate-200 w-full relative overflow-hidden shadow-inner">
           <iframe 
-             key={userLocation ? `${userLocation.lat.toFixed(4)}-${userLocation.lng.toFixed(4)}` : 'default-map'}
              width="100%" 
              height="100%" 
              frameBorder="0" 

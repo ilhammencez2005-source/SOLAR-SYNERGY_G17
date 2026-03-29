@@ -29,6 +29,7 @@ export default function App() {
   const [stations, setStations] = useState<Station[]>(STATIONS);
   const [isReservationMode, setIsReservationMode] = useState(false);
   const [bleDevice, setBleDevice] = useState<any | null>(null);
+  const [mapCenter, setMapCenter] = useState<{lat: number, lng: number} | null>(null);
   const [bleCharacteristic, setBleCharacteristic] = useState<any | null>(null);
   const [isBleConnecting, setIsBleConnecting] = useState(false);
   
@@ -223,11 +224,14 @@ export default function App() {
     if ("geolocation" in navigator) {
       const watchId = navigator.geolocation.watchPosition(
         (pos) => {
-          setUserLocation({ 
+          const newLoc = { 
             lat: pos.coords.latitude, 
             lng: pos.coords.longitude, 
             timestamp: Date.now() 
-          });
+          };
+          setUserLocation(newLoc);
+          // Set initial map center
+          setMapCenter(prev => prev || { lat: newLoc.lat, lng: newLoc.lng });
         },
         (err) => console.error("Location Error:", err),
         { 
@@ -405,7 +409,13 @@ export default function App() {
           {view === 'home' && (
             <HomeView 
               userLocation={userLocation} 
-              handleLocateMe={() => {}} 
+              mapCenter={mapCenter}
+              handleLocateMe={() => {
+                if (userLocation) {
+                  setMapCenter({ lat: userLocation.lat, lng: userLocation.lng });
+                  showNotification("LOCATING...");
+                }
+              }} 
               stations={stations} 
               onBookStation={(s) => { setSelectedStation(s); setIsReservationMode(false); setView('booking'); }} 
               onPrebook={(s) => { setSelectedStation(s); setIsReservationMode(true); setView('booking'); }} 
