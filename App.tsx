@@ -246,8 +246,10 @@ export default function App() {
             if (prev.reservationCountdown !== undefined && prev.reservationCountdown > 0) {
               return { ...prev, reservationCountdown: prev.reservationCountdown - 1 };
             } else {
-              showNotification("RESERVATION COMPLETE - CHARGING STARTED");
-              return { ...prev, status: 'charging', startTime: new Date() };
+              // LOCK THE HUB AFTER RESERVATION COUNTDOWN
+              sendCommand('LOCK');
+              showNotification("RESERVATION COMPLETE - HUB LOCKED");
+              return { ...prev, status: 'charging', startTime: new Date(), isLocked: true };
             }
           }
 
@@ -280,13 +282,13 @@ export default function App() {
             if (prev.completionTime) {
               const now = new Date();
               const diffMs = now.getTime() - prev.completionTime.getTime();
-              const diffMinutes = diffMs / (1000 * 60);
+              const diffSeconds = diffMs / 1000;
               
-              // Overstay fee after 1 hour (60 minutes), then every hour after
-              const overstayHours = Math.floor(diffMinutes / 60);
-              const expectedFee = overstayHours * PRICING.overstayFee;
+              // DEMO MODE: Overstay fee after 15 seconds, then every 15 seconds after
+              const overstayIntervals = Math.floor(diffSeconds / 15);
+              const expectedFee = overstayIntervals * PRICING.overstayFee;
 
-              if (overstayHours >= 1 && prev.overstayFee < expectedFee) {
+              if (overstayIntervals >= 1 && prev.overstayFee < expectedFee) {
                 showNotification(`OVERSTAY FEE UPDATED: RM ${expectedFee.toFixed(2)}`);
                 return {
                   ...prev,
@@ -308,9 +310,14 @@ export default function App() {
   const startCharging = async (mode: ChargingMode, slotId: string, duration: number | 'full', preAuth: number) => {
     if (preAuth > walletBalance) return showNotification("INSUFFICIENT CREDITS");
     
-    const locked = await sendCommand('LOCK');
-    if (!locked && (bleCharacteristic || wifiIp)) {
-      showNotification("WARNING: HUB FAILED TO LOCK");
+    // Only lock immediately if NOT in reservation mode
+    if (!isReservationMode) {
+      const locked = await sendCommand('LOCK');
+      if (!locked && (bleCharacteristic || wifiIp)) {
+        showNotification("WARNING: HUB FAILED TO LOCK");
+      }
+    } else {
+      showNotification("RESERVATION ACTIVE - PARK YOUR SCOOTER");
     }
     
     setWalletBalance(p => p - preAuth);
@@ -327,7 +334,7 @@ export default function App() {
       preAuthAmount: preAuth, 
       durationLimit: duration, 
       timeElapsed: 0, 
-      isLocked: true 
+      isLocked: !isReservationMode 
     });
     setView('charging');
   };

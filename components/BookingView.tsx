@@ -54,7 +54,7 @@ export const BookingView: React.FC<BookingViewProps> = ({ selectedStation, onBac
             <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-2">
                <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-gray-400">
                   <span>Overstay Fee</span>
-                  <span className="text-red-500">RM 1.00 / Hour</span>
+                  <span className="text-red-500">RM 1.00 / 15 SEC (DEMO)</span>
                </div>
                {isPrebook && (
                  <div className="flex justify-between items-center text-[8px] font-black uppercase tracking-widest text-amber-600 border-t border-gray-100 pt-2">

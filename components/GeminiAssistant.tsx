@@ -12,7 +12,6 @@ interface GeminiAssistantProps {
 const QUICK_PROMPTS = [
   "Food near Village 3C?",
   "How to save energy?",
-  "Turbo vs Eco mode",
   "Nearest synergy hub"
 ];
 

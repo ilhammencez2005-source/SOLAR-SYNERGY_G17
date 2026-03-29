@@ -40,9 +40,9 @@ export const ChargingSessionView: React.FC<ChargingSessionViewProps> = ({
       {/* Status Header */}
       <div className="flex flex-col items-center gap-3 py-2 relative">
          <div className="bg-white/90 backdrop-blur-md px-6 py-2.5 rounded-full border border-gray-100 shadow-sm flex items-center gap-2">
-            <div className={`w-2.5 h-2.5 rounded-full ${isReserving ? 'bg-amber-500 animate-pulse' : isOverstay ? 'bg-red-500 animate-pulse' : isCompleted ? 'bg-green-500' : 'bg-emerald-500 animate-pulse'}`}></div>
-            <span className="text-[10px] font-black text-gray-800 uppercase tracking-[0.2em]">
-               {isReserving ? "Reservation Active" : isOverstay ? "Overstay Fee Applied" : isCompleted ? "Session Done" : "Active Charge"}
+            <div className={`w-2.5 h-2.5 rounded-full ${isReserving ? 'bg-amber-500 animate-pulse' : isOverstay ? 'bg-red-500 animate-[pulse_0.5s_infinite]' : isCompleted ? 'bg-green-500' : 'bg-emerald-500 animate-pulse'}`}></div>
+            <span className={`text-[10px] font-black text-gray-800 uppercase tracking-[0.2em] ${isOverstay ? 'text-red-600' : ''}`}>
+               {isReserving ? "Reservation Active" : isOverstay ? "Overstay Warning" : isCompleted ? "Session Done" : "Active Charge"}
             </span>
          </div>
          
@@ -73,7 +73,7 @@ export const ChargingSessionView: React.FC<ChargingSessionViewProps> = ({
                   fill="transparent" 
                   strokeDasharray="283%" 
                   strokeDashoffset={`${283 - (283 * (isReserving ? (activeSession.reservationCountdown || 0) * 10 : percentage)) / 100}%`} 
-                  className={`${isReserving ? "text-amber-500" : isOverstay ? "text-red-500" : isCompleted ? "text-green-500" : "text-emerald-500"} transition-all duration-1000 ease-in-out`} 
+                  className={`${isReserving ? "text-amber-500" : isOverstay ? "text-red-500 animate-[pulse_1s_infinite]" : isCompleted ? "text-green-500" : "text-emerald-500"} transition-all duration-1000 ease-in-out`} 
                   strokeLinecap="round" 
                />
             </svg>
@@ -81,13 +81,18 @@ export const ChargingSessionView: React.FC<ChargingSessionViewProps> = ({
                {isReserving ? (
                   <Loader2 size={56} className="text-amber-500 mb-2 animate-spin" />
                ) : isOverstay ? (
-                  <Power size={56} className="text-red-500 mb-2 animate-pulse" />
+                  <div className="relative">
+                     <Power size={56} className="text-red-500 mb-2 animate-bounce" />
+                     <div className="absolute -top-2 -right-2 w-6 h-6 bg-red-600 rounded-full flex items-center justify-center animate-ping">
+                        <span className="text-white text-[10px] font-black">!</span>
+                     </div>
+                  </div>
                ) : isCompleted ? (
                   <CheckCircle2 size={56} className="text-green-500 mb-2 animate-bounce" />
                ) : (
                   <Zap size={56} className="mb-2 text-emerald-500 animate-pulse" fill="currentColor" />
                )}
-               <div className="text-7xl font-black text-gray-900 tracking-tighter tabular-nums leading-none">
+               <div className={`text-7xl font-black tracking-tighter tabular-nums leading-none ${isOverstay ? 'text-red-600' : 'text-gray-900'}`}>
                   {isReserving ? activeSession.reservationCountdown : percentage}<span className="text-3xl align-top ml-1 opacity-40">{isReserving ? 's' : '%'}</span>
                </div>
             </div>
@@ -112,11 +117,12 @@ export const ChargingSessionView: React.FC<ChargingSessionViewProps> = ({
          </div>
 
          {isOverstay && (
-           <div className="bg-red-50 border border-red-100 p-4 rounded-2xl text-center">
-              <p className="text-[9px] font-black text-red-600 uppercase tracking-widest">
-                Overstay Fee Applied: RM {activeSession.overstayFee.toFixed(2)}
+           <div className="bg-red-50 border border-red-100 p-4 rounded-2xl text-center animate-pulse">
+              <p className="text-[9px] font-black text-red-600 uppercase tracking-widest flex items-center justify-center gap-2">
+                <Power size={12} />
+                Overstay Fee Active: RM {activeSession.overstayFee.toFixed(2)}
               </p>
-              <p className="text-[7px] text-red-400 font-bold mt-1">RM 1.00 PER HOUR AFTER COMPLETION</p>
+              <p className="text-[7px] text-red-400 font-bold mt-1 uppercase tracking-widest">DEMO: RM 1.00 PER 15 SECONDS AFTER COMPLETION</p>
            </div>
          )}
 

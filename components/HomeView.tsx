@@ -220,27 +220,24 @@ export const HomeView: React.FC<HomeViewProps> = ({ userLocation, handleLocateMe
                        <div className="flex justify-between items-center">
                           <div className="flex items-center gap-4">
                              <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center text-emerald-600 shadow-sm border border-white">
-                                <Sun size={24} />
-                             </div>
-                             <div>
-                                <p className="font-black text-gray-900">Eco Charge</p>
-                                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Free Solar Synergy</p>
-                             </div>
-                          </div>
-                          <span className="bg-emerald-600 text-white px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-200">FREE</span>
-                       </div>
-
-                       <div className="flex justify-between items-center border-t border-gray-200 pt-8">
-                          <div className="flex items-center gap-4">
-                             <div className="w-12 h-12 bg-yellow-100 rounded-2xl flex items-center justify-center text-yellow-600 shadow-sm border border-white">
                                 <Zap size={24} fill="currentColor" />
                              </div>
                              <div>
-                                <p className="font-black text-gray-900">Turbo Charge</p>
-                                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">RM 1.20 Per kWh</p>
+                                <p className="font-black text-gray-900">Standard Charge</p>
+                                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">RM 0.15 Per Wh • Max 3kW</p>
                              </div>
                           </div>
-                          <span className="bg-yellow-500 text-white px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-yellow-200">PAID</span>
+                          <div className="flex flex-col items-end">
+                             <span className="bg-emerald-600 text-white px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-200">ACTIVE</span>
+                          </div>
+                       </div>
+
+                       <div className="border-t border-gray-200 pt-6">
+                          <div className="flex items-center gap-3 text-rose-500">
+                             <Clock size={14} />
+                             <p className="text-[9px] font-black uppercase tracking-widest">Overstay Fee: RM 1.00 / Hour</p>
+                          </div>
+                          <p className="text-[8px] text-gray-400 font-bold mt-1 ml-6 italic">DEMO: Applies 15 seconds after charging is complete if the scooter is not removed</p>
                        </div>
                     </div>
                   </div>
