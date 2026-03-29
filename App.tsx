@@ -230,7 +230,11 @@ export default function App() {
           });
         },
         (err) => console.error("Location Error:", err),
-        { enableHighAccuracy: true }
+        { 
+          enableHighAccuracy: true,
+          maximumAge: 0,
+          timeout: 5000
+        }
       );
       return () => navigator.geolocation.clearWatch(watchId);
     }
@@ -255,13 +259,13 @@ export default function App() {
           }
 
           if (prev.status === 'charging') {
-            const increment = 0.8; // Charge level increment
+            const increment = 2.5; // Charge level increment (FASTER FOR DEMO)
             const newLevel = prev.chargeLevel + increment;
             
             // Calculate energy consumed in Wh (simulated)
-            // 125 steps to 100%. 100Wh total = 0.8 Wh per step.
+            // 40 steps to 100% (at 2.5% per step). 100Wh total = 2.5 Wh per step.
             // 100Wh * RM 0.12 = RM 12.00 for full charge.
-            const energyInc = 0.8; 
+            const energyInc = 2.5; 
             const newCost = prev.cost + (energyInc * PRICING.rate);
             
             if (newLevel >= 100) { 
