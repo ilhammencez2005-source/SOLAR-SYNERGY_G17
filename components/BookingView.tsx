@@ -51,11 +51,17 @@ export const BookingView: React.FC<BookingViewProps> = ({ selectedStation, onBac
                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">RM 0.15 / Wh • Max 3kW</p>
                </div>
             </div>
-            <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+            <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-2">
                <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-gray-400">
                   <span>Overstay Fee</span>
                   <span className="text-red-500">RM 1.00 / Hour</span>
                </div>
+               {isPrebook && (
+                 <div className="flex justify-between items-center text-[8px] font-black uppercase tracking-widest text-amber-600 border-t border-gray-100 pt-2">
+                   <span>Reservation Timer</span>
+                   <span>10 SECONDS</span>
+                 </div>
+               )}
             </div>
          </div>
 
@@ -71,6 +77,9 @@ export const BookingView: React.FC<BookingViewProps> = ({ selectedStation, onBac
                  >
                    <Plug size={40} className={slot.status === 'Occupied' ? 'text-gray-300' : 'text-emerald-600'} />
                    <span className="font-black text-xl text-gray-900">Slot {slot.id}</span>
+                   {isPrebook && slot.status === 'Available' && (
+                     <span className="text-[8px] font-black text-amber-500 uppercase tracking-widest">10s Reservation</span>
+                   )}
                  </button>
                ))}
             </div>

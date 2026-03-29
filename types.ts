@@ -29,7 +29,8 @@ export interface Session {
   mode: ChargingMode;
   slotId: string;
   startTime: Date;
-  status: 'charging' | 'completed' | 'overstay';
+  status: 'reserving' | 'charging' | 'completed' | 'overstay';
+  reservationCountdown?: number;
   chargeLevel: number;
   cost: number;
   overstayFee: number;

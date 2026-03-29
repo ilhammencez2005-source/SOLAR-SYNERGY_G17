@@ -26,6 +26,7 @@ export default function App() {
   const [chargingHistory, setChargingHistory] = useState<ChargingHistoryItem[]>([]);
   
   const [stations, setStations] = useState<Station[]>(STATIONS);
+  const [isReservationMode, setIsReservationMode] = useState(false);
   const [bleDevice, setBleDevice] = useState<any | null>(null);
   const [bleCharacteristic, setBleCharacteristic] = useState<any | null>(null);
   const [isBleConnecting, setIsBleConnecting] = useState(false);
@@ -241,6 +242,15 @@ export default function App() {
         setActiveSession(prev => {
           if (!prev) return null;
           
+          if (prev.status === 'reserving') {
+            if (prev.reservationCountdown !== undefined && prev.reservationCountdown > 0) {
+              return { ...prev, reservationCountdown: prev.reservationCountdown - 1 };
+            } else {
+              showNotification("RESERVATION COMPLETE - CHARGING STARTED");
+              return { ...prev, status: 'charging', startTime: new Date() };
+            }
+          }
+
           if (prev.status === 'charging') {
             const increment = 0.8; // Charge level increment
             const newLevel = prev.chargeLevel + increment;
@@ -272,13 +282,16 @@ export default function App() {
               const diffMs = now.getTime() - prev.completionTime.getTime();
               const diffMinutes = diffMs / (1000 * 60);
               
-              // Overstay fee after 1 hour (60 minutes)
-              if (diffMinutes >= 60 && prev.status !== 'overstay') {
-                showNotification("OVERSTAY FEE APPLIED: RM 1.00");
+              // Overstay fee after 1 hour (60 minutes), then every hour after
+              const overstayHours = Math.floor(diffMinutes / 60);
+              const expectedFee = overstayHours * PRICING.overstayFee;
+
+              if (overstayHours >= 1 && prev.overstayFee < expectedFee) {
+                showNotification(`OVERSTAY FEE UPDATED: RM ${expectedFee.toFixed(2)}`);
                 return {
                   ...prev,
                   status: 'overstay',
-                  overstayFee: PRICING.overstayFee
+                  overstayFee: expectedFee
                 };
               }
             }
@@ -303,7 +316,17 @@ export default function App() {
     setWalletBalance(p => p - preAuth);
     setActiveSession({ 
       station: selectedStation!, 
-      mode, slotId, startTime: new Date(), status: 'charging', chargeLevel: 24, cost: 0, overstayFee: 0, preAuthAmount: preAuth, durationLimit: duration, timeElapsed: 0, 
+      mode, 
+      slotId, 
+      startTime: new Date(), 
+      status: isReservationMode ? 'reserving' : 'charging', 
+      reservationCountdown: isReservationMode ? 10 : undefined,
+      chargeLevel: 24, 
+      cost: 0, 
+      overstayFee: 0, 
+      preAuthAmount: preAuth, 
+      durationLimit: duration, 
+      timeElapsed: 0, 
       isLocked: true 
     });
     setView('charging');
@@ -365,12 +388,17 @@ export default function App() {
               userLocation={userLocation} 
               handleLocateMe={() => {}} 
               stations={stations} 
-              onBookStation={(s) => { setSelectedStation(s); setView('booking'); }} 
-              onPrebook={(s) => { setSelectedStation(s); setView('booking'); }} 
+              onBookStation={(s) => { setSelectedStation(s); setIsReservationMode(false); setView('booking'); }} 
+              onPrebook={(s) => { setSelectedStation(s); setIsReservationMode(true); setView('booking'); }} 
             />
           )}
           {view === 'booking' && selectedStation && (
-            <BookingView selectedStation={selectedStation} onBack={() => { setView('home'); setSelectedStation(null); }} onStartCharging={startCharging} />
+            <BookingView 
+              selectedStation={selectedStation} 
+              onBack={() => { setView('home'); setSelectedStation(null); }} 
+              onStartCharging={startCharging} 
+              isPrebook={isReservationMode}
+            />
           )}
           {view === 'charging' && (
             <ChargingSessionView 
