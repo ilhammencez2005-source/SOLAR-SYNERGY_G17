@@ -9,6 +9,7 @@ import { ChargingSessionView } from './components/ChargingSessionView';
 import { GeminiAssistant } from './components/GeminiAssistant';
 import { HistoryView } from './components/HistoryView';
 import { ProfileView } from './components/ProfileView';
+import { ReceiptView } from './components/ReceiptView';
 import { STATIONS, PRICING } from './constants';
 import { Station, Session, UserLocation, ViewState, ChargingMode, Receipt, ChargingHistoryItem } from './types';
 
@@ -347,6 +348,8 @@ export default function App() {
     const totalCost = cur.cost + cur.overstayFee;
     const refund = cur.preAuthAmount - totalCost;
     const energy = cur.cost / PRICING.rate; 
+    const co2Saved = (energy * 0.475).toFixed(1); // 475g per kWh
+    
     setWalletBalance(p => p + refund);
     
     const historyItem: ChargingHistoryItem = {
@@ -355,6 +358,8 @@ export default function App() {
       date: new Date().toLocaleString(),
       amount: totalCost,
       energy: energy,
+      duration: `${Math.floor(cur.timeElapsed / 60)}m ${cur.timeElapsed % 60}s`,
+      co2Saved: `${co2Saved}g`,
       status: 'Completed'
     };
     
@@ -362,17 +367,19 @@ export default function App() {
     setReceipt({ 
       stationName: cur.station.name, 
       date: new Date().toLocaleString(), 
-      duration: `${Math.floor(cur.timeElapsed / 60)}m`, 
-      totalEnergy: `${energy.toFixed(2)}Wh`, 
+      duration: `${Math.floor(cur.timeElapsed / 60)}m ${cur.timeElapsed % 60}s`, 
+      totalEnergy: `${energy.toFixed(1)}Wh`, 
       mode: cur.mode, 
-      cost: totalCost, 
-      paid: cur.preAuthAmount, 
-      refund: refund 
+      cost: cur.cost, 
+      overstayFee: cur.overstayFee,
+      paid: totalCost, 
+      refund: refund,
+      co2Saved: `${co2Saved}g`
     });
     
     setActiveSession(null); 
     setSelectedStation(null); 
-    setView('home');
+    setView('receipt');
   };
 
   return (
@@ -440,22 +447,15 @@ export default function App() {
               contextData={{ walletBalance, selectedStation, userLocation }} 
             />
           )}
+          {view === 'receipt' && receipt && (
+            <ReceiptView receipt={receipt} onBack={() => setView('home')} />
+          )}
         </main>
 
-        <NavigationBar view={view} setView={setView} hasActiveSession={!!activeSession} showNotification={showNotification} />
-
-        {receipt && (
-          <div className="fixed inset-0 z-[110] bg-black/70 backdrop-blur-2xl flex items-center justify-center p-6">
-             <div className="bg-white w-full max-w-sm rounded-[3.5rem] shadow-2xl p-12 text-center animate-fade-in-down">
-                <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-8 text-emerald-600"><CheckCircle2 size={40} /></div>
-                <h2 className="text-3xl font-black text-gray-900 uppercase mb-2">Success</h2>
-                <div className="my-10 bg-gray-50/50 py-8 rounded-[2.5rem] border border-gray-100">
-                   <p className="text-6xl font-black text-emerald-600 tracking-tighter">RM {receipt.cost.toFixed(2)}</p>
-                </div>
-                <button onClick={() => setReceipt(null)} className="w-full bg-gray-900 text-white py-6 rounded-[2.5rem] font-black text-xs uppercase tracking-[0.3em]">Done</button>
-             </div>
-          </div>
+        {view !== 'receipt' && (
+          <NavigationBar view={view} setView={setView} hasActiveSession={!!activeSession} showNotification={showNotification} />
         )}
+
     </div>
   );
 }

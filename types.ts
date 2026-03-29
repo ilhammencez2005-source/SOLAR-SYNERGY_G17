@@ -53,6 +53,8 @@ export interface ChargingHistoryItem {
   date: string;
   amount: number;
   energy: number;
+  duration: string;
+  co2Saved: string;
   status: 'Completed';
 }
 
@@ -63,11 +65,13 @@ export interface Receipt {
   totalEnergy: string;
   mode: ChargingMode;
   cost: number;
+  overstayFee: number;
   paid: number;
   refund: number;
+  co2Saved: string;
 }
 
-export type ViewState = 'home' | 'booking' | 'charging' | 'assistant' | 'profile' | 'history';
+export type ViewState = 'home' | 'booking' | 'charging' | 'assistant' | 'profile' | 'history' | 'receipt';
 
 export interface ContextData {
   walletBalance: number;

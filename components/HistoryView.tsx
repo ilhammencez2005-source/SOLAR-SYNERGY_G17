@@ -78,12 +78,16 @@ export const HistoryView: React.FC<HistoryViewProps> = ({ history, onClearHistor
               <div className="flex items-center justify-between pt-4 border-t border-gray-50">
                 <div className="flex items-center gap-6">
                   <div>
+                    <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Duration</p>
+                    <p className="text-xs font-black text-gray-700">{item.duration || 'N/A'}</p>
+                  </div>
+                  <div>
                     <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Energy</p>
                     <p className="text-xs font-black text-gray-700">{item.energy.toFixed(1)} Wh</p>
                   </div>
                   <div>
                     <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Impact</p>
-                    <p className="text-xs font-black text-emerald-600">{(item.energy * 0.0007).toFixed(2)}kg CO₂ saved</p>
+                    <p className="text-xs font-black text-emerald-600">{item.co2Saved || '0g'} saved</p>
                   </div>
                 </div>
                 <button className="p-2 bg-gray-50 rounded-xl text-gray-400 group-hover:text-emerald-600 transition-colors">
