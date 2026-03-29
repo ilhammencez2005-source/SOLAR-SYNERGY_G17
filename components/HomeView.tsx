@@ -224,7 +224,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ userLocation, handleLocateMe
                              </div>
                              <div>
                                 <p className="font-black text-gray-900">Standard Charge</p>
-                                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">RM 0.15 Per Wh • Max 3kW</p>
+                                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">RM 0.12 Per Wh • Max 3kW</p>
                              </div>
                           </div>
                           <div className="flex flex-col items-end">

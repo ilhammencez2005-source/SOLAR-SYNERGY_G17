@@ -39,7 +39,7 @@ export const STATIONS: Station[] = [
 ];
 
 export const PRICING = {
-  rate: 0.15, // RM per Wh
+  rate: 0.12, // RM per Wh
   overstayFee: 1.00, // RM after 1 hour of occupancy after charging
   maxPower: 3000, // Watts (3kW)
 };

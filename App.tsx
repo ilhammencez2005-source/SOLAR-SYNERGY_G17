@@ -259,8 +259,9 @@ export default function App() {
             const newLevel = prev.chargeLevel + increment;
             
             // Calculate energy consumed in Wh (simulated)
-            // 3kW max power = 3000W. In 1 second, it's 3000 / 3600 = 0.833 Wh
-            const energyInc = (PRICING.maxPower / 3600) * 0.5; // Simulate slower for demo
+            // 125 steps to 100%. 100Wh total = 0.8 Wh per step.
+            // 100Wh * RM 0.12 = RM 12.00 for full charge.
+            const energyInc = 0.8; 
             const newCost = prev.cost + (energyInc * PRICING.rate);
             
             if (newLevel >= 100) { 

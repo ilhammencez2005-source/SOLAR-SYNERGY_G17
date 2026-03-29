@@ -48,7 +48,7 @@ export const BookingView: React.FC<BookingViewProps> = ({ selectedStation, onBac
                </div>
                <div>
                   <p className="text-sm font-black text-gray-900">Standard Charge</p>
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">RM 0.15 / Wh • Max 3kW</p>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">RM 0.12 / Wh • Max 3kW</p>
                </div>
             </div>
             <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-2">
