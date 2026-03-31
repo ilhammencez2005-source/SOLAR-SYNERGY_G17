@@ -1,8 +1,9 @@
 
 import React, { useState, useMemo } from 'react';
-import { MapPin, Crosshair, CalendarClock, Zap, ArrowRight, Sun, Leaf, X, Star, Clock, Info, Search } from 'lucide-react';
+import { MapPin, Crosshair, CalendarClock, Zap, ArrowRight, Sun, Leaf, X, Star, Clock, Info, Search, Camera } from 'lucide-react';
 import { Station, UserLocation } from '../types';
 import { PRICING } from '../constants';
+import { ARView } from './ARView';
 
 interface HomeViewProps {
   userLocation: UserLocation | null;
@@ -16,6 +17,7 @@ interface HomeViewProps {
 export const HomeView: React.FC<HomeViewProps> = ({ userLocation, mapCenter, handleLocateMe, stations, onBookStation, onPrebook }) => {
   const [detailStation, setDetailStation] = useState<Station | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isAROpen, setIsAROpen] = useState(false);
 
   const filteredStations = useMemo(() => {
     if (!searchQuery.trim()) return stations;
@@ -67,6 +69,14 @@ export const HomeView: React.FC<HomeViewProps> = ({ userLocation, mapCenter, han
              className="absolute bottom-6 right-6 bg-white dark:bg-gray-800 p-3.5 rounded-2xl shadow-2xl text-gray-700 dark:text-gray-200 z-10 active:scale-95 transition-all hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-100 dark:border-gray-700"
           >
              <Crosshair size={22} className={userLocation ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-700 dark:text-gray-200'} />
+          </button>
+
+          <button 
+             onClick={() => setIsAROpen(true)}
+             className="absolute bottom-6 left-6 bg-emerald-600 p-3.5 rounded-2xl shadow-2xl text-white z-10 active:scale-95 transition-all hover:bg-emerald-700 border border-emerald-500 flex items-center gap-2"
+          >
+             <Camera size={22} />
+             <span className="text-[10px] font-black uppercase tracking-widest pr-1">AR View</span>
           </button>
        </div>
 
@@ -298,6 +308,15 @@ export const HomeView: React.FC<HomeViewProps> = ({ userLocation, mapCenter, han
                </div>
             </div>
          </div>
+       )}
+
+       {/* AR View Overlay */}
+       {isAROpen && (
+         <ARView 
+           userLocation={userLocation} 
+           stations={stations} 
+           onClose={() => setIsAROpen(false)} 
+         />
        )}
     </div>
   );
