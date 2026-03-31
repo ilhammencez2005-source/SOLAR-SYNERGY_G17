@@ -24,13 +24,13 @@ export const STATIONS: Station[] = [
   { 
     id: 2, 
     name: "Village 4", 
-    address: "Village 4, Universiti Teknologi PETRONAS, 31750 Seri Iskandar, Perak",
+    address: "Village 4 Cafe, 31750, Jln V4 dan V5, 31750 Bota, Perak",
     distance: "450m", 
     slots: 0, 
     totalSlots: 2,
     type: "Type 2 (11.0kW)",
     status: "Occupied",
-    coordinates: "4.3842,100.9768",
+    coordinates: "4.3884,100.9655",
     operatingHours: "7:00 AM - 11:00 PM",
     features: ["Security Guard", "Vending Machine"],
     reviews: [
