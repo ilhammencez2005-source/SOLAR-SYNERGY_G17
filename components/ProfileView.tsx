@@ -1,8 +1,9 @@
 
 import React, { useState } from 'react';
-import { User, Wallet, ShieldCheck, Bluetooth, Loader2, ChevronRight, Zap, QrCode, Lock, Unlock, AlertCircle, Info, Wifi, Globe, Moon, Sun, FileText } from 'lucide-react';
+import { User, Wallet, ShieldCheck, Bluetooth, Loader2, ChevronRight, Zap, QrCode, Lock, Unlock, AlertCircle, Info, Wifi, Globe, Moon, Sun, FileText, AlertTriangle } from 'lucide-react';
 import { useTheme } from '../ThemeContext';
 import { PrivacyPolicy } from './PrivacyPolicy';
+import { ReportIssueModal } from './ReportIssueModal';
 
 interface ProfileViewProps {
   walletBalance: number;
@@ -36,6 +37,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const { theme, toggleTheme } = useTheme();
   const [showQr, setShowQr] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showReport, setShowReport] = useState(false);
   const [activeTab, setActiveTab] = useState<'wallet' | 'hub' | 'about'>('wallet');
   
   const isBluetoothSupported = typeof navigator !== 'undefined' && !!(navigator as any).bluetooth;
@@ -374,6 +376,22 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     </div>
                     <ChevronRight size={18} className="text-emerald-400 group-hover:translate-x-1 transition-transform" />
                   </button>
+
+                  <button 
+                    onClick={() => setShowReport(true)}
+                    className="w-full flex items-center justify-between p-6 bg-rose-50 dark:bg-rose-900/10 rounded-[2rem] border border-rose-100 dark:border-rose-800/30 group hover:bg-rose-100 dark:hover:bg-rose-900/20 transition-all"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-white dark:bg-gray-800 rounded-xl text-rose-600 dark:text-rose-400 shadow-sm">
+                        <AlertTriangle size={18} />
+                      </div>
+                      <div className="text-left">
+                        <p className="text-[11px] font-black text-rose-900 dark:text-rose-300 uppercase tracking-tight">Report an Issue</p>
+                        <p className="text-[9px] font-bold text-rose-700 dark:text-rose-500 uppercase tracking-widest">Hardware & Safety Support</p>
+                      </div>
+                    </div>
+                    <ChevronRight size={18} className="text-rose-400 group-hover:translate-x-1 transition-transform" />
+                  </button>
                 </div>
               </div>
             </div>
@@ -382,6 +400,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       </div>
 
       {showPrivacy && <PrivacyPolicy onClose={() => setShowPrivacy(false)} />}
+      {showReport && <ReportIssueModal onClose={() => setShowReport(false)} />}
 
       <div className="pt-8 pb-12 space-y-2 opacity-50">
         <p className="text-[8px] text-center text-gray-400 font-black uppercase tracking-[0.2em]">ETP Group 17 • Solar Synergy v1.8</p>

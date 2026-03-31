@@ -1,10 +1,11 @@
 
 import React, { useState, useMemo } from 'react';
-import { MapPin, Crosshair, CalendarClock, Zap, ArrowRight, Sun, Leaf, X, Star, Clock, Info, Search, Camera, Shield } from 'lucide-react';
+import { MapPin, Crosshair, CalendarClock, Zap, ArrowRight, Sun, Leaf, X, Star, Clock, Info, Search, Camera, Shield, AlertTriangle } from 'lucide-react';
 import { Station, UserLocation } from '../types';
 import { PRICING } from '../constants';
 import { ARView } from './ARView';
 import { PrivacyPolicy } from './PrivacyPolicy';
+import { ReportIssueModal } from './ReportIssueModal';
 
 interface HomeViewProps {
   userLocation: UserLocation | null;
@@ -20,6 +21,8 @@ export const HomeView: React.FC<HomeViewProps> = ({ userLocation, mapCenter, han
   const [searchQuery, setSearchQuery] = useState('');
   const [isAROpen, setIsAROpen] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showReport, setShowReport] = useState(false);
+  const [reportStation, setReportStation] = useState<string | undefined>(undefined);
 
   const filteredStations = useMemo(() => {
     if (!searchQuery.trim()) return stations;
@@ -207,14 +210,23 @@ export const HomeView: React.FC<HomeViewProps> = ({ userLocation, mapCenter, han
           </div>
 
           {/* Footer Link */}
-          <div className="pt-12 pb-8 flex flex-col items-center gap-4 opacity-40 hover:opacity-100 transition-opacity">
-            <button 
-              onClick={() => setShowPrivacy(true)}
-              className="flex items-center gap-2 text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
-            >
-              <Shield size={12} />
-              Privacy Policy & PDPA Notice
-            </button>
+          <div className="pt-12 pb-8 flex flex-col items-center gap-6 opacity-40 hover:opacity-100 transition-opacity">
+            <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-8">
+              <button 
+                onClick={() => setShowPrivacy(true)}
+                className="flex items-center gap-2 text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+              >
+                <Shield size={12} />
+                Privacy Policy & PDPA Notice
+              </button>
+              <button 
+                onClick={() => { setReportStation(undefined); setShowReport(true); }}
+                className="flex items-center gap-2 text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] hover:text-rose-600 dark:hover:text-rose-400 transition-colors"
+              >
+                <AlertTriangle size={12} />
+                Report an Issue
+              </button>
+            </div>
             <p className="text-[7px] font-black text-gray-300 dark:text-gray-600 uppercase tracking-[0.3em]">© 2026 Solar Synergy UTP</p>
           </div>
        </div>
@@ -283,8 +295,17 @@ export const HomeView: React.FC<HomeViewProps> = ({ userLocation, mapCenter, han
                   </div>
 
                   {/* Reviews */}
-                  <div className="space-y-5 pb-10">
-                    <h3 className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">Campus Feedback</h3>
+                  <div className="space-y-5 pb-6">
+                    <div className="flex items-center justify-between px-1">
+                      <h3 className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Campus Feedback</h3>
+                      <button 
+                        onClick={() => { setReportStation(detailStation.name); setShowReport(true); }}
+                        className="flex items-center gap-1.5 text-[8px] font-black text-rose-500 dark:text-rose-400 uppercase tracking-widest hover:bg-rose-50 dark:hover:bg-rose-900/20 px-2 py-1 rounded-lg transition-colors"
+                      >
+                        <AlertTriangle size={10} />
+                        Report Issue
+                      </button>
+                    </div>
                     <div className="space-y-4">
                       {detailStation.reviews.map((review) => (
                         <div key={review.id} className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-[2.2rem] p-7 shadow-sm hover:shadow-md transition-shadow">
@@ -336,6 +357,14 @@ export const HomeView: React.FC<HomeViewProps> = ({ userLocation, mapCenter, han
        {/* Privacy Policy Overlay */}
        {showPrivacy && (
          <PrivacyPolicy onClose={() => setShowPrivacy(false)} />
+       )}
+
+       {/* Report Issue Overlay */}
+       {showReport && (
+         <ReportIssueModal 
+           onClose={() => setShowReport(false)} 
+           stationName={reportStation} 
+         />
        )}
     </div>
   );
