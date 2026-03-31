@@ -338,7 +338,7 @@ export default function App() {
       startTime: new Date(), 
       status: isReservationMode ? 'reserving' : 'charging', 
       reservationCountdown: isReservationMode ? 10 : undefined,
-      chargeLevel: 24, 
+      chargeLevel: 0, 
       cost: 0, 
       overstayFee: 0, 
       preAuthAmount: preAuth, 

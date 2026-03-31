@@ -14,21 +14,22 @@ interface BookingViewProps {
 type BookingStep = 'mode' | 'slot';
 
 export const BookingView: React.FC<BookingViewProps> = ({ selectedStation, onBack, onStartCharging, isPrebook }) => {
-  const [step, setStep] = useState<BookingStep>('slot');
+  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
 
   const slots = Array.from({ length: selectedStation.totalSlots }, (_, i) => ({
     id: String.fromCharCode(65 + i),
     status: i < selectedStation.slots ? 'Available' : 'Occupied'
   }));
 
-  const handleSlotSelect = (slotId: string) => {
+  const handleConfirmStart = () => {
+    if (!selectedSlotId) return;
     // Fixed rate of RM 0.15/Wh. Pre-auth RM 10.00
     const preAuth = 10.00;
-    onStartCharging('standard', slotId, 'full', preAuth);
+    onStartCharging('standard', selectedSlotId, 'full', preAuth);
   };
 
   return (
-    <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-950 transition-colors">
+    <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-950 transition-colors relative">
       <div className="bg-white dark:bg-gray-900 shadow-sm z-20 border-b border-gray-200 dark:border-gray-800 shrink-0">
          <div className="max-w-4xl mx-auto px-6 py-5 flex items-center gap-4">
             <button onClick={onBack} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-900 dark:text-gray-100">
@@ -41,7 +42,7 @@ export const BookingView: React.FC<BookingViewProps> = ({ selectedStation, onBac
          </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto p-6 space-y-6 pb-40">
          {/* Location & Directions */}
          <div className="bg-white dark:bg-gray-900 p-6 rounded-[2.5rem] border border-gray-100 dark:border-gray-800 shadow-sm space-y-4">
             <div className="flex items-start gap-4">
@@ -127,10 +128,16 @@ export const BookingView: React.FC<BookingViewProps> = ({ selectedStation, onBac
                  <button 
                    key={slot.id}
                    disabled={slot.status === 'Occupied'}
-                   onClick={() => handleSlotSelect(slot.id)}
-                   className={`p-10 rounded-[3rem] border-2 flex flex-col items-center gap-4 transition-all ${slot.status === 'Occupied' ? 'bg-gray-50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-800 opacity-50' : 'bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800 active:border-emerald-600 active:bg-emerald-50 dark:active:bg-emerald-900/20'}`}
+                   onClick={() => setSelectedSlotId(slot.id)}
+                   className={`p-10 rounded-[3rem] border-2 flex flex-col items-center gap-4 transition-all ${
+                     slot.status === 'Occupied' 
+                       ? 'bg-gray-50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-800 opacity-50' 
+                       : selectedSlotId === slot.id
+                         ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-600 shadow-lg shadow-emerald-100 dark:shadow-none scale-105'
+                         : 'bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800 hover:border-emerald-200 dark:hover:border-emerald-800'
+                   }`}
                  >
-                   <Plug size={40} className={slot.status === 'Occupied' ? 'text-gray-300 dark:text-gray-700' : 'text-emerald-600'} />
+                   <Plug size={40} className={slot.status === 'Occupied' ? 'text-gray-300 dark:text-gray-700' : selectedSlotId === slot.id ? 'text-emerald-600 animate-pulse' : 'text-emerald-600'} />
                    <span className="font-black text-xl text-gray-900 dark:text-gray-100">Slot {slot.id}</span>
                    {isPrebook && slot.status === 'Available' && (
                      <span className="text-[8px] font-black text-amber-500 uppercase tracking-widest">10s Reservation</span>
@@ -140,6 +147,35 @@ export const BookingView: React.FC<BookingViewProps> = ({ selectedStation, onBac
             </div>
          </div>
       </div>
+
+      {/* Confirmation Sticky Footer */}
+      {selectedSlotId && (
+        <div className="absolute bottom-0 left-0 right-0 p-6 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-t border-gray-100 dark:border-gray-800 z-30 animate-fade-in-up">
+          <div className="max-w-md mx-auto space-y-4">
+            <div className="flex justify-between items-center px-2">
+              <div>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Selected Connector</p>
+                <p className="text-xl font-black text-gray-900 dark:text-gray-100">Slot {selectedSlotId}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Pre-Auth Amount</p>
+                <p className="text-xl font-black text-emerald-600">RM 10.00</p>
+              </div>
+            </div>
+            <button 
+              onClick={handleConfirmStart}
+              className="w-full py-6 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[2.5rem] font-black text-xs uppercase tracking-[0.3em] shadow-2xl shadow-emerald-200 dark:shadow-none transition-all transform active:scale-95 flex items-center justify-center gap-3"
+            >
+              <ZapIcon size={20} fill="currentColor" />
+              {isPrebook ? "Confirm Reservation" : "Start Charging Now"}
+              <ArrowRight size={20} />
+            </button>
+            <p className="text-[8px] text-center text-gray-400 font-black uppercase tracking-widest">
+              By proceeding, you agree to the RM 10.00 pre-authorization fee.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
