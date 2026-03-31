@@ -75,7 +75,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ userLocation, mapCenter, han
 
           <button 
              onClick={() => setIsAROpen(true)}
-             className="absolute bottom-6 left-6 bg-emerald-600 p-3.5 rounded-2xl shadow-2xl text-white z-10 active:scale-95 transition-all hover:bg-emerald-700 border border-emerald-500 flex items-center gap-2"
+             className="absolute bottom-20 left-6 bg-emerald-600 p-3.5 rounded-2xl shadow-2xl text-white z-10 active:scale-95 transition-all hover:bg-emerald-700 border border-emerald-500 flex items-center gap-2"
           >
              <Camera size={22} />
              <span className="text-[10px] font-black uppercase tracking-widest pr-1">AR View</span>
