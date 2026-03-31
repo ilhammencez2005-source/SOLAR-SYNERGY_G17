@@ -45,7 +45,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ userLocation, mapCenter, han
   };
 
   const mapSrc = useMemo(() => {
-    const center = mapCenter || { lat: 4.3835, lng: 100.9638 };
+    const center = mapCenter || { lat: 4.3835, lng: 100.9708 };
     return `https://maps.google.com/maps?q=${center.lat},${center.lng}&hl=en&z=17&output=embed&iwloc=near`;
   }, [mapCenter?.lat, mapCenter?.lng]);
 
