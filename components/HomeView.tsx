@@ -1,9 +1,10 @@
 
 import React, { useState, useMemo } from 'react';
-import { MapPin, Crosshair, CalendarClock, Zap, ArrowRight, Sun, Leaf, X, Star, Clock, Info, Search, Camera } from 'lucide-react';
+import { MapPin, Crosshair, CalendarClock, Zap, ArrowRight, Sun, Leaf, X, Star, Clock, Info, Search, Camera, Shield } from 'lucide-react';
 import { Station, UserLocation } from '../types';
 import { PRICING } from '../constants';
 import { ARView } from './ARView';
+import { PrivacyPolicy } from './PrivacyPolicy';
 
 interface HomeViewProps {
   userLocation: UserLocation | null;
@@ -18,6 +19,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ userLocation, mapCenter, han
   const [detailStation, setDetailStation] = useState<Station | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isAROpen, setIsAROpen] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
 
   const filteredStations = useMemo(() => {
     if (!searchQuery.trim()) return stations;
@@ -203,6 +205,18 @@ export const HomeView: React.FC<HomeViewProps> = ({ userLocation, mapCenter, han
                </div>
              )}
           </div>
+
+          {/* Footer Link */}
+          <div className="pt-12 pb-8 flex flex-col items-center gap-4 opacity-40 hover:opacity-100 transition-opacity">
+            <button 
+              onClick={() => setShowPrivacy(true)}
+              className="flex items-center gap-2 text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+            >
+              <Shield size={12} />
+              Privacy Policy & PDPA Notice
+            </button>
+            <p className="text-[7px] font-black text-gray-300 dark:text-gray-600 uppercase tracking-[0.3em]">© 2026 Solar Synergy UTP</p>
+          </div>
        </div>
 
        {/* Detailed Hub Modal */}
@@ -317,6 +331,11 @@ export const HomeView: React.FC<HomeViewProps> = ({ userLocation, mapCenter, han
            stations={stations} 
            onClose={() => setIsAROpen(false)} 
          />
+       )}
+
+       {/* Privacy Policy Overlay */}
+       {showPrivacy && (
+         <PrivacyPolicy onClose={() => setShowPrivacy(false)} />
        )}
     </div>
   );

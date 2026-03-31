@@ -1,7 +1,8 @@
 
 import React, { useState } from 'react';
-import { User, Wallet, ShieldCheck, Bluetooth, Loader2, ChevronRight, Zap, QrCode, Lock, Unlock, AlertCircle, Info, Wifi, Globe, Moon, Sun } from 'lucide-react';
+import { User, Wallet, ShieldCheck, Bluetooth, Loader2, ChevronRight, Zap, QrCode, Lock, Unlock, AlertCircle, Info, Wifi, Globe, Moon, Sun, FileText } from 'lucide-react';
 import { useTheme } from '../ThemeContext';
+import { PrivacyPolicy } from './PrivacyPolicy';
 
 interface ProfileViewProps {
   walletBalance: number;
@@ -34,6 +35,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 }) => {
   const { theme, toggleTheme } = useTheme();
   const [showQr, setShowQr] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
   const [activeTab, setActiveTab] = useState<'wallet' | 'hub' | 'about'>('wallet');
   
   const isBluetoothSupported = typeof navigator !== 'undefined' && !!(navigator as any).bluetooth;
@@ -356,12 +358,30 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                       hardware integration and real-time synergy assistance.
                     </p>
                   </div>
+
+                  <button 
+                    onClick={() => setShowPrivacy(true)}
+                    className="w-full flex items-center justify-between p-6 bg-emerald-50 dark:bg-emerald-900/10 rounded-[2rem] border border-emerald-100 dark:border-emerald-800/30 group hover:bg-emerald-100 dark:hover:bg-emerald-900/20 transition-all"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-white dark:bg-gray-800 rounded-xl text-emerald-600 dark:text-emerald-400 shadow-sm">
+                        <FileText size={18} />
+                      </div>
+                      <div className="text-left">
+                        <p className="text-[11px] font-black text-emerald-900 dark:text-emerald-300 uppercase tracking-tight">Privacy Policy</p>
+                        <p className="text-[9px] font-bold text-emerald-700 dark:text-emerald-500 uppercase tracking-widest">PDPA Compliance Notice</p>
+                      </div>
+                    </div>
+                    <ChevronRight size={18} className="text-emerald-400 group-hover:translate-x-1 transition-transform" />
+                  </button>
                 </div>
               </div>
             </div>
           </div>
         )}
       </div>
+
+      {showPrivacy && <PrivacyPolicy onClose={() => setShowPrivacy(false)} />}
 
       <div className="pt-8 pb-12 space-y-2 opacity-50">
         <p className="text-[8px] text-center text-gray-400 font-black uppercase tracking-[0.2em]">ETP Group 17 • Solar Synergy v1.8</p>
