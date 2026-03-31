@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
-import { User, Wallet, ShieldCheck, Bluetooth, Loader2, ChevronRight, Zap, QrCode, Lock, Unlock, AlertCircle, Info, Wifi, Globe } from 'lucide-react';
+import { User, Wallet, ShieldCheck, Bluetooth, Loader2, ChevronRight, Zap, QrCode, Lock, Unlock, AlertCircle, Info, Wifi, Globe, Moon, Sun } from 'lucide-react';
+import { useTheme } from '../ThemeContext';
 
 interface ProfileViewProps {
   walletBalance: number;
@@ -31,6 +32,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   setWifiIp,
   isWifiConnected
 }) => {
+  const { theme, toggleTheme } = useTheme();
   const [showQr, setShowQr] = useState(false);
   const [activeTab, setActiveTab] = useState<'wallet' | 'hub' | 'about'>('wallet');
   
@@ -45,17 +47,27 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   return (
     <div className="p-6 max-w-2xl mx-auto animate-slide-up pb-44 space-y-8">
       {/* User Header */}
-      <div className="flex items-center gap-5 bg-white p-8 rounded-[3rem] border border-gray-100 shadow-sm">
-        <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 ring-4 ring-emerald-50">
-          <User size={40} />
-        </div>
-        <div>
-          <h2 className="text-xl font-black text-gray-900 tracking-tight leading-none mb-1 uppercase">Ilhammencez bin Mohd Rasyidi</h2>
-          <div className="flex items-center gap-2">
-            <ShieldCheck size={14} className="text-emerald-500" />
-            <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">VERIFIED USER</span>
+      <div className="flex items-center justify-between bg-white dark:bg-gray-800 p-8 rounded-[3rem] border border-gray-100 dark:border-gray-700 shadow-sm transition-colors">
+        <div className="flex items-center gap-5">
+          <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center text-emerald-600 dark:text-emerald-400 ring-4 ring-emerald-50 dark:ring-emerald-900/20">
+            <User size={40} />
+          </div>
+          <div>
+            <h2 className="text-xl font-black text-gray-900 dark:text-white tracking-tight leading-none mb-1 uppercase">Ilhammencez bin Mohd Rasyidi</h2>
+            <div className="flex items-center gap-2">
+              <ShieldCheck size={14} className="text-emerald-500" />
+              <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">VERIFIED USER</span>
+            </div>
           </div>
         </div>
+        
+        <button 
+          onClick={toggleTheme}
+          className="p-4 rounded-2xl bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all active:scale-95"
+          aria-label="Toggle Theme"
+        >
+          {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+        </button>
       </div>
 
       {/* Tab Navigation */}

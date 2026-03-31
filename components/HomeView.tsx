@@ -50,23 +50,23 @@ export const HomeView: React.FC<HomeViewProps> = ({ userLocation, mapCenter, han
   }, [mapCenter?.lat, mapCenter?.lng]);
 
   return (
-    <div className="bg-gray-50 min-h-full flex flex-col pb-40">
+    <div className="bg-gray-50 dark:bg-gray-950 min-h-full flex flex-col pb-40 transition-colors">
        {/* Map View */}
-       <div className="h-[32vh] min-h-[240px] bg-slate-200 w-full relative overflow-hidden shadow-inner">
+       <div className="h-[32vh] min-h-[240px] bg-slate-200 dark:bg-slate-900 w-full relative overflow-hidden shadow-inner">
           <iframe 
              width="100%" 
              height="100%" 
              frameBorder="0" 
              src={mapSrc}
-             className="absolute inset-0 w-full h-full opacity-90 grayscale-[10%]"
+             className="absolute inset-0 w-full h-full opacity-90 dark:opacity-70 grayscale-[10%] dark:invert-[90%] dark:hue-rotate-180"
              title="Map"
           ></iframe>
           
           <button 
              onClick={handleLocateMe}
-             className="absolute bottom-6 right-6 bg-white p-3.5 rounded-2xl shadow-2xl text-gray-700 z-10 active:scale-95 transition-all hover:bg-gray-50 border border-gray-100"
+             className="absolute bottom-6 right-6 bg-white dark:bg-gray-800 p-3.5 rounded-2xl shadow-2xl text-gray-700 dark:text-gray-200 z-10 active:scale-95 transition-all hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-100 dark:border-gray-700"
           >
-             <Crosshair size={22} className={userLocation ? 'text-emerald-600' : 'text-gray-700'} />
+             <Crosshair size={22} className={userLocation ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-700 dark:text-gray-200'} />
           </button>
        </div>
 
@@ -75,14 +75,14 @@ export const HomeView: React.FC<HomeViewProps> = ({ userLocation, mapCenter, han
           {/* Search Bar */}
           <div className="relative group">
             <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none">
-              <Search size={18} className="text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
+              <Search size={18} className="text-gray-400 dark:text-gray-500 group-focus-within:text-emerald-500 transition-colors" />
             </div>
             <input
               type="text"
               placeholder="Search by hub name or address..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-white border border-gray-100 rounded-[2rem] py-5 pl-14 pr-6 text-sm font-bold text-gray-700 shadow-[0_8px_30px_rgb(0,0,0,0.04)] focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 transition-all placeholder:text-gray-300"
+              className="w-full bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2rem] py-5 pl-14 pr-6 text-sm font-bold text-gray-700 dark:text-gray-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 transition-all placeholder:text-gray-300 dark:placeholder:text-gray-600"
             />
             {searchQuery && (
               <button 
@@ -97,13 +97,13 @@ export const HomeView: React.FC<HomeViewProps> = ({ userLocation, mapCenter, han
           <div className="space-y-5">
              <div className="flex items-center justify-between px-2">
                <div>
-                  <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">Nearby Synergy Hubs</h2>
-                  <p className="text-xs font-bold text-gray-500 mt-0.5">Available stations for UTP campus</p>
+                  <h2 className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.3em]">Nearby Synergy Hubs</h2>
+                  <p className="text-xs font-bold text-gray-500 dark:text-gray-400 mt-0.5">Available stations for UTP campus</p>
                </div>
                {!userLocation && (
                  <div className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></div>
-                    <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Locating...</span>
+                    <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">Locating...</span>
                  </div>
                )}
              </div>
@@ -117,29 +117,29 @@ export const HomeView: React.FC<HomeViewProps> = ({ userLocation, mapCenter, han
                   const isActive = station.status === 'Active';
 
                   return (
-                    <div key={station.id} className="bg-white rounded-[3rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100/80 overflow-hidden hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] transition-all duration-500 group">
+                    <div key={station.id} className="bg-white dark:bg-gray-900 rounded-[3rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100/80 dark:border-gray-800/80 overflow-hidden hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] transition-all duration-500 group">
                       <div className="p-8">
                           {/* Hub Identity & Slots */}
                           <div className="flex justify-between items-start mb-8">
                             <div className="space-y-2">
-                                <h3 className="text-2xl font-black text-gray-900 tracking-tighter leading-none group-hover:text-emerald-700 transition-colors">
+                                <h3 className="text-2xl font-black text-gray-900 dark:text-white tracking-tighter leading-none group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors">
                                   {station.name}
                                 </h3>
                                 <div className="flex items-center gap-2">
-                                  <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${isActive ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+                                  <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${isActive ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400' : 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400'}`}>
                                       <div className={`w-1 h-1 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-rose-500'} animate-pulse`} />
                                       {station.status}
                                   </div>
-                                  <div className="flex items-center gap-1 text-[10px] font-bold text-gray-400 bg-gray-50 px-2.5 py-1 rounded-full">
+                                  <div className="flex items-center gap-1 text-[10px] font-bold text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-800 px-2.5 py-1 rounded-full">
                                       <MapPin size={10} className="text-emerald-500" />
                                       {displayDistance}
                                   </div>
                                 </div>
                             </div>
                             
-                            <div className="flex flex-col items-center justify-center bg-gray-50 w-16 h-16 rounded-[1.5rem] border border-gray-100 shadow-inner group-hover:bg-emerald-50 group-hover:border-emerald-100 transition-colors">
-                                <span className="text-2xl font-black text-gray-900 leading-none group-hover:text-emerald-700">{station.slots}</span>
-                                <span className="text-[7px] font-black text-gray-400 uppercase tracking-widest mt-1">Ready</span>
+                            <div className="flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-800 w-16 h-16 rounded-[1.5rem] border border-gray-100 dark:border-gray-700 shadow-inner group-hover:bg-emerald-50 dark:group-hover:bg-emerald-900/20 group-hover:border-emerald-100 dark:group-hover:border-emerald-800 transition-colors">
+                                <span className="text-2xl font-black text-gray-900 dark:text-white leading-none group-hover:text-emerald-700 dark:group-hover:text-emerald-400">{station.slots}</span>
+                                <span className="text-[7px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-1">Ready</span>
                             </div>
                           </div>
                           
@@ -148,14 +148,14 @@ export const HomeView: React.FC<HomeViewProps> = ({ userLocation, mapCenter, han
                              <div className="grid grid-cols-2 gap-3">
                                <button 
                                    onClick={() => onPrebook(station)}
-                                   className="bg-gray-50 border border-gray-100 text-gray-900 text-[10px] font-black py-4 rounded-[1.5rem] transition-all flex items-center justify-center gap-2 uppercase tracking-widest hover:bg-gray-100 active:scale-95"
+                                   className="bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 text-gray-900 dark:text-gray-200 text-[10px] font-black py-4 rounded-[1.5rem] transition-all flex items-center justify-center gap-2 uppercase tracking-widest hover:bg-gray-100 dark:hover:bg-gray-700 active:scale-95"
                                >
                                    <CalendarClock size={16} />
                                    Reserve
                                </button>
                                <button 
                                    onClick={() => onBookStation(station)}
-                                   className="bg-gradient-to-br from-emerald-500 to-emerald-700 text-white text-[10px] font-black py-4 rounded-[1.5rem] transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-200/50 hover:shadow-emerald-300/60 active:scale-95 uppercase tracking-widest"
+                                   className="bg-gradient-to-br from-emerald-500 to-emerald-700 text-white text-[10px] font-black py-4 rounded-[1.5rem] transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-200/50 dark:shadow-emerald-900/40 hover:shadow-emerald-300/60 active:scale-95 uppercase tracking-widest"
                                >
                                    <Zap size={16} fill="currentColor" />
                                    Charge Now
@@ -164,13 +164,13 @@ export const HomeView: React.FC<HomeViewProps> = ({ userLocation, mapCenter, han
 
                              <button 
                                  onClick={() => setDetailStation(station)}
-                                 className="w-full flex items-center justify-between px-6 py-3.5 bg-gray-50/50 rounded-2xl hover:bg-emerald-50 transition-colors group/link"
+                                 className="w-full flex items-center justify-between px-6 py-3.5 bg-gray-50/50 dark:bg-gray-800/50 rounded-2xl hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors group/link"
                              >
                                  <div className="flex items-center gap-3">
-                                    <Info size={14} className="text-gray-400 group-hover/link:text-emerald-500" />
-                                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] group-hover/link:text-emerald-700">Detailed View & Pricing</span>
+                                    <Info size={14} className="text-gray-400 dark:text-gray-500 group-hover/link:text-emerald-500" />
+                                    <span className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] group-hover/link:text-emerald-700 dark:group-hover/link:text-emerald-400">Detailed View & Pricing</span>
                                  </div>
-                                 <ArrowRight size={14} className="text-gray-300 group-hover/link:text-emerald-500 group-hover/link:translate-x-1 transition-all" />
+                                 <ArrowRight size={14} className="text-gray-300 dark:text-gray-600 group-hover/link:text-emerald-500 group-hover/link:translate-x-1 transition-all" />
                              </button>
                           </div>
                       </div>
@@ -178,15 +178,15 @@ export const HomeView: React.FC<HomeViewProps> = ({ userLocation, mapCenter, han
                   );
                })
              ) : (
-               <div className="bg-white rounded-[3rem] p-12 text-center border border-gray-100 shadow-sm">
-                 <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6 text-gray-300">
+               <div className="bg-white dark:bg-gray-900 rounded-[3rem] p-12 text-center border border-gray-100 dark:border-gray-800 shadow-sm">
+                 <div className="w-20 h-20 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6 text-gray-300 dark:text-gray-700">
                    <Search size={32} />
                  </div>
-                 <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight">No Hubs Found</h3>
-                 <p className="text-xs font-bold text-gray-400 mt-2">Try searching for a different name or address</p>
+                 <h3 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight">No Hubs Found</h3>
+                 <p className="text-xs font-bold text-gray-400 dark:text-gray-500 mt-2">Try searching for a different name or address</p>
                  <button 
                    onClick={() => setSearchQuery('')}
-                   className="mt-8 text-[10px] font-black text-emerald-600 uppercase tracking-widest hover:text-emerald-700 transition-colors"
+                   className="mt-8 text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest hover:text-emerald-700 transition-colors"
                  >
                    Clear Search
                  </button>
@@ -198,60 +198,60 @@ export const HomeView: React.FC<HomeViewProps> = ({ userLocation, mapCenter, han
        {/* Detailed Hub Modal */}
        {detailStation && (
          <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-end justify-center animate-fade-in-down" onClick={() => setDetailStation(null)}>
-            <div className="bg-white w-full max-w-lg rounded-t-[3rem] shadow-2xl h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="bg-white dark:bg-gray-900 w-full max-w-lg rounded-t-[3rem] shadow-2xl h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
                <div className="p-10 flex-1 overflow-y-auto space-y-10 scrollbar-hide">
                   <div className="flex justify-between items-center">
                     <div className="space-y-1">
-                      <h2 className="text-3xl font-black tracking-tighter text-gray-900">{detailStation.name}</h2>
+                      <h2 className="text-3xl font-black tracking-tighter text-gray-900 dark:text-white">{detailStation.name}</h2>
                       <div className="flex items-center gap-2">
                         <MapPin size={12} className="text-emerald-500" />
-                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{detailStation.address}</span>
+                        <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">{detailStation.address}</span>
                       </div>
                     </div>
-                    <button onClick={() => setDetailStation(null)} className="p-3 bg-gray-100 hover:bg-gray-200 transition-colors rounded-full text-gray-500">
+                    <button onClick={() => setDetailStation(null)} className="p-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors rounded-full text-gray-500 dark:text-gray-400">
                       <X size={24} />
                     </button>
                   </div>
                   
                   {/* Pricing Modes */}
                   <div className="space-y-5">
-                    <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Charging Synergy</h3>
-                    <div className="bg-gray-50 border border-gray-100 rounded-[2.5rem] p-8 space-y-8">
+                    <h3 className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">Charging Synergy</h3>
+                    <div className="bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800 rounded-[2.5rem] p-8 space-y-8">
                        <div className="flex justify-between items-center">
                           <div className="flex items-center gap-4">
-                             <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center text-emerald-600 shadow-sm border border-white">
+                             <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/30 rounded-2xl flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-sm border border-white dark:border-gray-700">
                                 <Zap size={24} fill="currentColor" />
                              </div>
                              <div>
-                                <p className="font-black text-gray-900">Standard Charge</p>
-                                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">RM 0.12 Per Wh • Max 3kW</p>
+                                <p className="font-black text-gray-900 dark:text-white">Standard Charge</p>
+                                <p className="text-[9px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest">RM 0.12 Per Wh • Max 3kW</p>
                              </div>
                           </div>
                           <div className="flex flex-col items-end">
-                             <span className="bg-emerald-600 text-white px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-200">ACTIVE</span>
+                             <span className="bg-emerald-600 dark:bg-emerald-500 text-white px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-200 dark:shadow-emerald-900/40">ACTIVE</span>
                           </div>
                        </div>
 
-                       <div className="border-t border-gray-200 pt-6">
+                       <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
                           <div className="flex items-center gap-3 text-rose-500">
                              <Clock size={14} />
                              <p className="text-[9px] font-black uppercase tracking-widest">Overstay Fee: RM 1.00 / Hour</p>
                           </div>
-                          <p className="text-[8px] text-gray-400 font-bold mt-1 ml-6 italic">DEMO: Applies 15 seconds after charging is complete if the scooter is not removed</p>
+                          <p className="text-[8px] text-gray-400 dark:text-gray-500 font-bold mt-1 ml-6 italic">DEMO: Applies 15 seconds after charging is complete if the scooter is not removed</p>
                        </div>
                     </div>
                   </div>
 
                   {/* Status & Hours */}
                   <div className="px-2">
-                    <div className="bg-emerald-50/50 border border-emerald-100/50 rounded-[2.5rem] p-8 flex items-center gap-6 shadow-sm">
-                       <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-50">
+                    <div className="bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-100/50 dark:border-emerald-800/20 rounded-[2.5rem] p-8 flex items-center gap-6 shadow-sm">
+                       <div className="w-14 h-14 bg-white dark:bg-gray-800 rounded-2xl flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-sm border border-emerald-50 dark:border-emerald-900/20">
                           <Clock size={28} strokeWidth={2.5} />
                        </div>
                        <div>
-                          <p className="text-[10px] font-black text-emerald-800 uppercase tracking-[0.2em] mb-1">Live Status</p>
+                          <p className="text-[10px] font-black text-emerald-800 dark:text-emerald-400 uppercase tracking-[0.2em] mb-1">Live Status</p>
                           <div className="flex items-baseline gap-2">
-                             <p className="text-2xl font-black text-gray-900 tracking-tighter uppercase">OPERATING: {detailStation.operatingHours}</p>
+                             <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tighter uppercase">OPERATING: {detailStation.operatingHours}</p>
                              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse mb-1"></div>
                           </div>
                        </div>
@@ -260,27 +260,27 @@ export const HomeView: React.FC<HomeViewProps> = ({ userLocation, mapCenter, han
 
                   {/* Reviews */}
                   <div className="space-y-5 pb-10">
-                    <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Campus Feedback</h3>
+                    <h3 className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">Campus Feedback</h3>
                     <div className="space-y-4">
                       {detailStation.reviews.map((review) => (
-                        <div key={review.id} className="bg-white border border-gray-100 rounded-[2.2rem] p-7 shadow-sm hover:shadow-md transition-shadow">
+                        <div key={review.id} className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-[2.2rem] p-7 shadow-sm hover:shadow-md transition-shadow">
                            <div className="flex justify-between items-start mb-3">
                              <div className="flex items-center gap-3">
-                               <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-400 text-[10px] font-black">
+                               <div className="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center text-gray-400 dark:text-gray-500 text-[10px] font-black">
                                  {review.user.charAt(0)}
                                </div>
                                <div>
-                                 <p className="font-black text-gray-900 text-xs uppercase tracking-tight">{review.user}</p>
+                                 <p className="font-black text-gray-900 dark:text-white text-xs uppercase tracking-tight">{review.user}</p>
                                  <div className="flex items-center gap-0.5 mt-0.5">
                                    {[...Array(5)].map((_, i) => (
-                                     <Star key={i} size={10} className={i < review.rating ? "text-yellow-400" : "text-gray-200"} fill={i < review.rating ? "currentColor" : "none"} />
+                                     <Star key={i} size={10} className={i < review.rating ? "text-yellow-400" : "text-gray-200 dark:text-gray-700"} fill={i < review.rating ? "currentColor" : "none"} />
                                    ))}
                                  </div>
                                </div>
                              </div>
-                             <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest bg-gray-50 px-2 py-0.5 rounded-md">{review.date}</span>
+                             <span className="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest bg-gray-50 dark:bg-gray-900 px-2 py-0.5 rounded-md">{review.date}</span>
                            </div>
-                           <p className="text-[11px] text-gray-600 font-bold leading-relaxed">{review.comment}</p>
+                           <p className="text-[11px] text-gray-600 dark:text-gray-400 font-bold leading-relaxed">{review.comment}</p>
                         </div>
                       ))}
                     </div>
@@ -288,10 +288,10 @@ export const HomeView: React.FC<HomeViewProps> = ({ userLocation, mapCenter, han
                </div>
                
                {/* Fixed Modal CTA */}
-               <div className="p-10 border-t border-gray-100 bg-white rounded-t-[2.5rem] shadow-[0_-10px_40px_rgba(0,0,0,0.04)]">
+               <div className="p-10 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 rounded-t-[2.5rem] shadow-[0_-10px_40px_rgba(0,0,0,0.04)]">
                   <button 
                      onClick={() => { setDetailStation(null); onBookStation(detailStation); }}
-                     className="w-full bg-emerald-600 text-white py-6 rounded-[2.5rem] font-black text-base shadow-2xl shadow-emerald-200 active:scale-[0.98] transition-all uppercase tracking-[0.25em]"
+                     className="w-full bg-emerald-600 dark:bg-emerald-500 text-white py-6 rounded-[2.5rem] font-black text-base shadow-2xl shadow-emerald-200 dark:shadow-emerald-900/40 active:scale-[0.98] transition-all uppercase tracking-[0.25em]"
                   >
                      Secure This Hub
                   </button>

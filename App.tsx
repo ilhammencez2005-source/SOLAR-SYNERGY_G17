@@ -392,15 +392,15 @@ export default function App() {
   };
 
   return (
-    <div className="flex flex-col h-screen w-full bg-gray-50 text-gray-900 font-sans overflow-hidden">
+    <div className="flex flex-col h-screen w-full bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 font-sans overflow-hidden transition-colors">
         {notification && (
-          <div className="fixed top-12 left-1/2 transform -translate-x-1/2 z-[150] bg-gray-900/95 text-white px-6 py-4 rounded-3xl shadow-2xl text-[10px] font-black animate-fade-in-down border border-white/10 text-center uppercase tracking-widest">
+          <div className="fixed top-12 left-1/2 transform -translate-x-1/2 z-[150] bg-gray-900/95 dark:bg-white/95 text-white dark:text-gray-900 px-6 py-4 rounded-3xl shadow-2xl text-[10px] font-black animate-fade-in-down border border-white/10 dark:border-black/10 text-center uppercase tracking-widest">
             {notification}
           </div>
         )}
         
         {view !== 'charging' && view !== 'assistant' && (
-          <div className="shrink-0 w-full bg-white shadow-sm border-b border-gray-100 relative z-50">
+          <div className="shrink-0 w-full bg-white dark:bg-gray-900 shadow-sm border-b border-gray-100 dark:border-gray-800 relative z-50 transition-colors">
              <Header walletBalance={walletBalance} onProfileClick={() => setView('profile')} />
           </div>
         )}

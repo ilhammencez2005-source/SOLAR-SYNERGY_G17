@@ -49,7 +49,7 @@ export const GeminiAssistant: React.FC<GeminiAssistantProps> = ({ onClose, conte
   };
 
   return (
-    <div className="flex flex-col h-full bg-gray-50 animate-slide-up max-w-4xl mx-auto w-full border-x border-gray-100 shadow-sm overflow-hidden relative">
+    <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-950 animate-slide-up max-w-4xl mx-auto w-full border-x border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden relative transition-colors">
       {/* Premium Header */}
       <div className="bg-gradient-to-br from-slate-900 via-emerald-900 to-teal-900 p-6 text-white shadow-lg shrink-0 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/20 rounded-full blur-3xl -mr-16 -mt-16"></div>
@@ -76,25 +76,25 @@ export const GeminiAssistant: React.FC<GeminiAssistantProps> = ({ onClose, conte
       </div>
 
       {/* Chat Messages */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-8 bg-gray-50/30 scrollbar-hide">
+      <div className="flex-1 overflow-y-auto p-6 space-y-8 bg-gray-50/30 dark:bg-gray-900/30 scrollbar-hide">
         {messages.map((msg, idx) => (
           <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in-down`}>
             <div className={`max-w-[85%] p-5 text-sm leading-relaxed shadow-sm transition-all ${
               msg.role === 'user' 
-                ? 'bg-emerald-600 text-white rounded-3xl rounded-br-none shadow-emerald-100 font-medium' 
-                : 'bg-white text-gray-800 border border-gray-100 rounded-3xl rounded-bl-none'
+                ? 'bg-emerald-600 text-white rounded-3xl rounded-br-none shadow-emerald-100 dark:shadow-none font-medium' 
+                : 'bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 border border-gray-100 dark:border-gray-800 rounded-3xl rounded-bl-none'
             }`}>
               <div className="whitespace-pre-wrap">{msg.text}</div>
               
               {/* Grounding Metadata Rendering */}
               {msg.grounding && msg.grounding.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-gray-100 space-y-4">
+                <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 space-y-4">
                    <div className="flex items-center justify-between">
                      <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Grounded by Google Maps</p>
                      <img 
                        src="https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_92x30dp.png" 
                        alt="Google"
-                       className="h-2 opacity-50 grayscale hover:grayscale-0 transition-all cursor-help"
+                       className="h-2 opacity-50 grayscale hover:grayscale-0 transition-all cursor-help dark:invert"
                        title="Powered by Google Grounding"
                      />
                    </div>
@@ -111,7 +111,7 @@ export const GeminiAssistant: React.FC<GeminiAssistantProps> = ({ onClose, conte
                               href={data.uri}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-100 rounded-2xl text-[11px] font-bold text-gray-700 hover:bg-emerald-50 hover:border-emerald-200 transition-all group w-fit"
+                              className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl text-[11px] font-bold text-gray-700 dark:text-gray-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:border-emerald-200 dark:hover:border-emerald-800 transition-all group w-fit"
                             >
                               {isMap ? <MapPin size={14} className="text-emerald-500" /> : <Globe size={14} className="text-blue-500" />}
                               <span className="max-w-[200px] truncate">{data.title || (isMap ? "Location" : "Verified Source")}</span>
@@ -122,7 +122,7 @@ export const GeminiAssistant: React.FC<GeminiAssistantProps> = ({ onClose, conte
                             {chunk.maps?.placeAnswerSources?.reviewSnippets && chunk.maps.placeAnswerSources.reviewSnippets.length > 0 && (
                               <div className="pl-4 space-y-2">
                                 {chunk.maps.placeAnswerSources.reviewSnippets.map((snippet: any, sIdx: number) => (
-                                  <div key={sIdx} className="flex gap-2 p-2 bg-emerald-50/30 rounded-xl border border-emerald-50 text-[10px] text-gray-600 italic">
+                                  <div key={sIdx} className="flex gap-2 p-2 bg-emerald-50/30 dark:bg-emerald-900/10 rounded-xl border border-emerald-50 dark:border-emerald-900/20 text-[10px] text-gray-600 dark:text-gray-400 italic">
                                     <Quote size={8} className="text-emerald-400 shrink-0 mt-0.5" />
                                     <p>{snippet.text}</p>
                                   </div>
@@ -137,12 +137,12 @@ export const GeminiAssistant: React.FC<GeminiAssistantProps> = ({ onClose, conte
               )}
 
               {msg.role === 'model' && idx === 0 && (
-                <div className="mt-4 pt-4 border-t border-gray-100 flex flex-wrap gap-2">
+                <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 flex flex-wrap gap-2">
                    {QUICK_PROMPTS.map(prompt => (
                      <button 
                         key={prompt}
                         onClick={() => handleSend(prompt)}
-                        className="text-[9px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-full hover:bg-emerald-100 transition-colors"
+                        className="text-[9px] font-black uppercase tracking-wider bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 px-3 py-1.5 rounded-full hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors"
                      >
                        {prompt}
                      </button>
@@ -154,7 +154,7 @@ export const GeminiAssistant: React.FC<GeminiAssistantProps> = ({ onClose, conte
         ))}
         {isLoading && (
           <div className="flex justify-start">
-            <div className="bg-white p-5 rounded-3xl rounded-bl-none border border-gray-100 shadow-sm flex gap-2 items-center">
+            <div className="bg-white dark:bg-gray-900 p-5 rounded-3xl rounded-bl-none border border-gray-100 dark:border-gray-800 shadow-sm flex gap-2 items-center">
               <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce"></div>
               <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce [animation-delay:0.2s]"></div>
               <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce [animation-delay:0.4s]"></div>
@@ -166,7 +166,7 @@ export const GeminiAssistant: React.FC<GeminiAssistantProps> = ({ onClose, conte
       </div>
 
       {/* Input Area */}
-      <div className="p-6 bg-white border-t border-gray-100 shrink-0">
+      <div className="p-6 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 shrink-0">
         <div className="flex gap-3 max-w-3xl mx-auto items-center">
           <div className="flex-1 relative">
             <input
@@ -175,18 +175,18 @@ export const GeminiAssistant: React.FC<GeminiAssistantProps> = ({ onClose, conte
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSend()}
               placeholder="Find a cafe near Village 3C..."
-              className="w-full bg-gray-50 border-gray-100 border rounded-[1.5rem] px-6 py-4 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none focus:bg-white transition-all pr-12 font-medium"
+              className="w-full bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700 border rounded-[1.5rem] px-6 py-4 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none focus:bg-white dark:focus:bg-gray-800 transition-all pr-12 font-medium text-gray-900 dark:text-gray-100"
             />
           </div>
           <button 
             onClick={() => handleSend()}
             disabled={isLoading || !input.trim()}
-            className="bg-emerald-600 text-white p-4 rounded-2xl disabled:opacity-50 hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-100 active:scale-95 group"
+            className="bg-emerald-600 text-white p-4 rounded-2xl disabled:opacity-50 hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-100 dark:shadow-none active:scale-95 group"
           >
             <Send size={20} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
           </button>
         </div>
-        <p className="text-[8px] text-center text-gray-300 font-black uppercase tracking-[0.2em] mt-4">
+        <p className="text-[8px] text-center text-gray-300 dark:text-gray-600 font-black uppercase tracking-[0.2em] mt-4">
            Grounded by Google Maps & Search • Solar Synergy v2.6
         </p>
       </div>

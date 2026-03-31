@@ -8,6 +8,16 @@
     <meta name="description" content="Solar Synergy: Advanced micro-mobility charging platform for UTP. Features sustainable solar charging, secure Bluetooth hub control, and AI-powered synergy assistance.">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+          },
+        },
+      };
       // Safety shim for process.env
       window.process = window.process || { env: {} };
     </script>

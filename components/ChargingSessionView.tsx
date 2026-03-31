@@ -35,13 +35,13 @@ export const ChargingSessionView: React.FC<ChargingSessionViewProps> = ({
   };
 
   return (
-    <div className="w-full max-w-md mx-auto h-full flex flex-col justify-between p-8 animate-fade-in-down pb-40">
+    <div className="w-full max-w-md mx-auto h-full flex flex-col justify-between p-8 animate-fade-in-down pb-40 transition-colors">
       
       {/* Status Header */}
       <div className="flex flex-col items-center gap-3 py-2 relative">
-         <div className="bg-white/90 backdrop-blur-md px-6 py-2.5 rounded-full border border-gray-100 shadow-sm flex items-center gap-2">
+         <div className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-md px-6 py-2.5 rounded-full border border-gray-100 dark:border-gray-800 shadow-sm flex items-center gap-2">
             <div className={`w-2.5 h-2.5 rounded-full ${isReserving ? 'bg-amber-500 animate-pulse' : isOverstay ? 'bg-red-500 animate-[pulse_0.5s_infinite]' : isCompleted ? 'bg-green-500' : 'bg-emerald-500 animate-pulse'}`}></div>
-            <span className={`text-[10px] font-black text-gray-800 uppercase tracking-[0.2em] ${isOverstay ? 'text-red-600' : ''}`}>
+            <span className={`text-[10px] font-black text-gray-800 dark:text-gray-200 uppercase tracking-[0.2em] ${isOverstay ? 'text-red-600' : ''}`}>
                {isReserving ? "Reservation Active" : isOverstay ? "Overstay Warning" : isCompleted ? "Session Done" : "Active Charge"}
             </span>
          </div>
@@ -65,7 +65,7 @@ export const ChargingSessionView: React.FC<ChargingSessionViewProps> = ({
          
          <div className="relative w-72 h-72 sm:w-80 sm:h-80 flex items-center justify-center">
             <svg className="w-full h-full transform -rotate-90 drop-shadow-2xl">
-               <circle cx="50%" cy="50%" r="45%" stroke="currentColor" strokeWidth="12" fill="transparent" className="text-gray-100" />
+               <circle cx="50%" cy="50%" r="45%" stroke="currentColor" strokeWidth="12" fill="transparent" className="text-gray-100 dark:text-gray-800" />
                <circle 
                   cx="50%" cy="50%" r="45%" 
                   stroke="currentColor" 
@@ -92,7 +92,7 @@ export const ChargingSessionView: React.FC<ChargingSessionViewProps> = ({
                ) : (
                   <Zap size={56} className="mb-2 text-emerald-500 animate-pulse" fill="currentColor" />
                )}
-               <div className={`text-7xl font-black tracking-tighter tabular-nums leading-none ${isOverstay ? 'text-red-600' : 'text-gray-900'}`}>
+               <div className={`text-7xl font-black tracking-tighter tabular-nums leading-none ${isOverstay ? 'text-red-600' : 'text-gray-900 dark:text-gray-100'}`}>
                   {isReserving ? activeSession.reservationCountdown : percentage}<span className="text-3xl align-top ml-1 opacity-40">{isReserving ? 's' : '%'}</span>
                </div>
             </div>
@@ -102,13 +102,13 @@ export const ChargingSessionView: React.FC<ChargingSessionViewProps> = ({
       {/* Info & Control */}
       <div className="space-y-4 w-full">
          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col items-center">
+            <div className="bg-white dark:bg-gray-900 p-6 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col items-center">
                <span className="text-gray-400 text-[9px] font-black uppercase tracking-widest mb-1">Elapsed</span>
-               <span className="text-2xl font-black text-gray-800 tracking-tighter">
+               <span className="text-2xl font-black text-gray-800 dark:text-gray-200 tracking-tighter">
                {Math.floor(activeSession.timeElapsed / 60)}:{(activeSession.timeElapsed % 60).toString().padStart(2, '0')}
                </span>
             </div>
-            <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col items-center">
+            <div className="bg-white dark:bg-gray-900 p-6 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col items-center">
                <span className="text-gray-400 text-[9px] font-black uppercase tracking-widest mb-1">Total Cost</span>
                <span className={`text-2xl font-black tracking-tighter ${isOverstay ? 'text-red-500' : 'text-emerald-600'}`}>
                   RM {(activeSession.cost + activeSession.overstayFee).toFixed(2)}
@@ -117,7 +117,7 @@ export const ChargingSessionView: React.FC<ChargingSessionViewProps> = ({
          </div>
 
          {isOverstay && (
-           <div className="bg-red-50 border border-red-100 p-4 rounded-2xl text-center animate-pulse">
+           <div className="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 p-4 rounded-2xl text-center animate-pulse">
               <p className="text-[9px] font-black text-red-600 uppercase tracking-widest flex items-center justify-center gap-2">
                 <Power size={12} />
                 Overstay Fee Active: RM {activeSession.overstayFee.toFixed(2)}
@@ -127,7 +127,7 @@ export const ChargingSessionView: React.FC<ChargingSessionViewProps> = ({
          )}
 
          {isReserving && (
-           <div className="bg-amber-50 border border-amber-100 p-4 rounded-2xl text-center">
+           <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/30 p-4 rounded-2xl text-center">
               <p className="text-[9px] font-black text-amber-600 uppercase tracking-widest">
                 Preparing Charging Slot...
               </p>
