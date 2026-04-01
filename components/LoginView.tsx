@@ -72,6 +72,10 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
       // onLogin is not needed here as onAuthStateChanged in App.tsx handles the state transition
     } catch (err: any) {
       console.error("Auth Error:", err.code, err.message);
+      if (err.code === 'auth/operation-not-allowed') {
+        setError("Email/Password login is not enabled in the Firebase Console. Please enable it under Authentication > Sign-in method.");
+        return;
+      }
       if (isSimulationError(err)) {
         handleSimulationFallback();
         return;
@@ -201,19 +205,6 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
                 </>
               )}
             </button>
-
-            {!isSignUp && (
-              <button 
-                type="button"
-                onClick={() => {
-                  setEmail('demo@solarsynergy.com');
-                  setPassword('password123');
-                }}
-                className="w-full py-3 bg-gray-50 dark:bg-gray-800 text-gray-400 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-dashed border-gray-200 dark:border-gray-700"
-              >
-                Use Demo Credentials
-              </button>
-            )}
           </form>
 
           <div className="relative py-4">

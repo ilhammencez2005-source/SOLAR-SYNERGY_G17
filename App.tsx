@@ -755,6 +755,7 @@ export default function App() {
                 setIsLoggedIn(false); 
                 setUserEmail(null); 
                 setSimulationMode(false);
+                setChargingHistory([]); // Clear history on logout
                 setView('home'); 
               }}
             />
