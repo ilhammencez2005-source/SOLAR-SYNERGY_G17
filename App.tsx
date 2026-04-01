@@ -37,13 +37,16 @@ export default function App() {
   const [connectionMode, setConnectionMode] = useState<'ble' | 'wifi'>('ble');
   const [wifiIp, setWifiIp] = useState<string>('');
   const [isWifiConnected, setIsWifiConnected] = useState(false);
+  const [lastVibState, setLastVibState] = useState(false);
 
   const handleOccupancyUpdate = (event: any) => {
     const value = new TextDecoder().decode(event.target.value);
     console.log("BLE Notification Received:", value);
     
-    if (value.includes("OCCUPIED") || value.includes("AVAILABLE")) {
-      const isOccupied = value.includes("OCCUPIED");
+    if (value.includes("OCCUPIED") || value.includes("AVAILABLE") || value.includes("VACANT") || value.includes("VIBRATION_ALERT")) {
+      const isOccupied = value.includes("OCCUPIED") || value.includes("VIBRATION_ALERT");
+      const isVacant = value.includes("AVAILABLE") || value.includes("VACANT");
+      
       setStations(prev => prev.map(s => {
         if (s.name === "Village 4") {
           return {
@@ -54,7 +57,16 @@ export default function App() {
         }
         return s;
       }));
-      showNotification(isOccupied ? "VILLAGE 4 PORT OCCUPIED" : "VILLAGE 4 PORT AVAILABLE");
+      
+      if (value.includes("VIBRATION_ALERT")) {
+        if (!lastVibState) {
+          showNotification("VILLAGE 4: VIBRATION DETECTED!");
+          setLastVibState(true);
+        }
+      } else {
+        setLastVibState(false);
+        showNotification(isOccupied ? "VILLAGE 4 PORT OCCUPIED" : "VILLAGE 4 PORT AVAILABLE");
+      }
     }
   };
 
@@ -201,8 +213,8 @@ export default function App() {
           });
           clearTimeout(timeoutId);
           const data = await res.text();
-          if (data.includes("OCCUPIED") || data.includes("AVAILABLE")) {
-            const isOccupied = data.includes("OCCUPIED");
+          if (data.includes("OCCUPIED") || data.includes("AVAILABLE") || data.includes("VACANT") || data.includes("VIBRATION_ALERT")) {
+            const isOccupied = data.includes("OCCUPIED") || data.includes("VIBRATION_ALERT");
             setStations(prev => prev.map(s => {
               if (s.name === "Village 4") {
                 return { ...s, status: isOccupied ? "Occupied" : "Active", slots: isOccupied ? 0 : 1 };
@@ -210,6 +222,15 @@ export default function App() {
               return s;
             }));
             setIsWifiConnected(true);
+            
+            if (data.includes("VIBRATION_ALERT")) {
+              if (!lastVibState) {
+                showNotification("VILLAGE 4: VIBRATION DETECTED!");
+                setLastVibState(true);
+              }
+            } else {
+              setLastVibState(false);
+            }
           }
         } catch (e) {
           // Don't show notification on poll failure to avoid spam

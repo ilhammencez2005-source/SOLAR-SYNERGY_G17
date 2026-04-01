@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { User, Wallet, ShieldCheck, Bluetooth, Loader2, ChevronRight, Zap, QrCode, Lock, Unlock, AlertCircle, Info, Wifi, Globe, Moon, Sun, FileText, AlertTriangle } from 'lucide-react';
+import { User, Wallet, ShieldCheck, Bluetooth, Loader2, ChevronRight, Zap, QrCode, Lock, Unlock, AlertCircle, Info, Wifi, Globe, Moon, Sun, FileText, AlertTriangle, Leaf } from 'lucide-react';
 import { useTheme } from '../ThemeContext';
 import { PrivacyPolicy } from './PrivacyPolicy';
 import { ReportIssueModal } from './ReportIssueModal';
@@ -329,31 +329,50 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         )}
 
         {activeTab === 'about' && (
-          <div className="animate-fade-in-down space-y-6">
-            <div className="space-y-4">
-              <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.3em] px-2">Project Information</h3>
-              <div className="bg-white rounded-[3rem] p-8 border border-gray-100 shadow-sm">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="p-4 rounded-2xl bg-emerald-50 text-emerald-600">
-                    <Zap size={24} />
+          <div className="animate-fade-in-down space-y-8 pb-10">
+            <div className="space-y-6">
+              <div className="px-2 flex items-center justify-between">
+                <h3 className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.3em]">Project Information</h3>
+                <span className="px-3 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-[8px] font-black uppercase tracking-widest rounded-full">v1.8 Stable</span>
+              </div>
+
+              <div className="bg-white dark:bg-gray-800 rounded-[3rem] p-10 border border-gray-100 dark:border-gray-700 shadow-xl shadow-gray-100/50 dark:shadow-none transition-colors">
+                <div className="flex items-center gap-6 mb-10">
+                  <div className="relative">
+                    <div className="p-5 rounded-3xl bg-emerald-500 text-white shadow-lg shadow-emerald-200 dark:shadow-none">
+                      <Zap size={32} fill="currentColor" />
+                    </div>
+                    <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-sm">
+                      <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse" />
+                    </div>
                   </div>
                   <div>
-                    <p className="font-black text-gray-900 uppercase tracking-tight">Solar Synergy</p>
-                    <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">ETP GROUP 17</p>
+                    <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tighter uppercase leading-none">Solar Synergy</h2>
+                    <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-[0.2em] mt-2">ETP GROUP 17 • UTP</p>
                   </div>
                 </div>
                 
-                <div className="space-y-6">
-                  <div className="p-6 bg-gray-50 rounded-[2rem] border border-gray-100">
-                    <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3">Origin</p>
-                    <p className="text-[11px] font-medium text-gray-600 leading-relaxed uppercase tracking-wide">
-                      We are from <span className="font-black text-gray-900">ETP Group 17 Universiti Teknologi Petronas</span>.
+                <div className="grid gap-6">
+                  <div className="group p-8 bg-gray-50 dark:bg-gray-900/50 rounded-[2.5rem] border border-gray-100 dark:border-gray-800 hover:border-emerald-100 dark:hover:border-emerald-900/30 transition-all">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="p-2.5 bg-white dark:bg-gray-800 rounded-xl text-emerald-600 dark:text-emerald-400 shadow-sm group-hover:scale-110 transition-transform">
+                        <Globe size={18} />
+                      </div>
+                      <p className="text-[11px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Origin</p>
+                    </div>
+                    <p className="text-[13px] font-semibold text-gray-600 dark:text-gray-300 leading-relaxed uppercase tracking-tight">
+                      We are a dedicated team from <span className="font-black text-gray-900 dark:text-white">ETP Group 17 Universiti Teknologi Petronas</span>, committed to campus sustainability.
                     </p>
                   </div>
 
-                  <div className="p-6 bg-gray-50 rounded-[2rem] border border-gray-100">
-                    <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3">Mission</p>
-                    <p className="text-[11px] font-medium text-gray-600 leading-relaxed uppercase tracking-wide">
+                  <div className="group p-8 bg-gray-50 dark:bg-gray-900/50 rounded-[2.5rem] border border-gray-100 dark:border-gray-800 hover:border-emerald-100 dark:hover:border-emerald-900/30 transition-all">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="p-2.5 bg-white dark:bg-gray-800 rounded-xl text-emerald-600 dark:text-emerald-400 shadow-sm group-hover:scale-110 transition-transform">
+                        <Leaf size={18} />
+                      </div>
+                      <p className="text-[11px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Mission</p>
+                    </div>
+                    <p className="text-[13px] font-semibold text-gray-600 dark:text-gray-300 leading-relaxed uppercase tracking-tight">
                       Solar Synergy is a sustainable micro-mobility charging platform designed for the UTP campus. 
                       Our project leverages solar energy to provide eco-friendly charging for electric scooters 
                       and bicycles, promoting a greener and smarter campus environment through innovative 
@@ -361,37 +380,39 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     </p>
                   </div>
 
-                  <button 
-                    onClick={() => setShowPrivacy(true)}
-                    className="w-full flex items-center justify-between p-6 bg-emerald-50 dark:bg-emerald-900/10 rounded-[2rem] border border-emerald-100 dark:border-emerald-800/30 group hover:bg-emerald-100 dark:hover:bg-emerald-900/20 transition-all"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 bg-white dark:bg-gray-800 rounded-xl text-emerald-600 dark:text-emerald-400 shadow-sm">
-                        <FileText size={18} />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                    <button 
+                      onClick={() => setShowPrivacy(true)}
+                      className="flex items-center justify-between p-6 bg-emerald-50 dark:bg-emerald-900/10 rounded-[2rem] border border-emerald-100 dark:border-emerald-800/30 group hover:bg-emerald-100 dark:hover:bg-emerald-900/20 transition-all"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="p-3 bg-white dark:bg-gray-800 rounded-xl text-emerald-600 dark:text-emerald-400 shadow-sm">
+                          <FileText size={18} />
+                        </div>
+                        <div className="text-left">
+                          <p className="text-[10px] font-black text-emerald-900 dark:text-emerald-300 uppercase tracking-tight">Privacy Policy</p>
+                          <p className="text-[8px] font-bold text-emerald-700 dark:text-emerald-500 uppercase tracking-widest">PDPA Compliance</p>
+                        </div>
                       </div>
-                      <div className="text-left">
-                        <p className="text-[11px] font-black text-emerald-900 dark:text-emerald-300 uppercase tracking-tight">Privacy Policy</p>
-                        <p className="text-[9px] font-bold text-emerald-700 dark:text-emerald-500 uppercase tracking-widest">PDPA Compliance Notice</p>
-                      </div>
-                    </div>
-                    <ChevronRight size={18} className="text-emerald-400 group-hover:translate-x-1 transition-transform" />
-                  </button>
+                      <ChevronRight size={16} className="text-emerald-400 group-hover:translate-x-1 transition-transform" />
+                    </button>
 
-                  <button 
-                    onClick={() => setShowReport(true)}
-                    className="w-full flex items-center justify-between p-6 bg-rose-50 dark:bg-rose-900/10 rounded-[2rem] border border-rose-100 dark:border-rose-800/30 group hover:bg-rose-100 dark:hover:bg-rose-900/20 transition-all"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 bg-white dark:bg-gray-800 rounded-xl text-rose-600 dark:text-rose-400 shadow-sm">
-                        <AlertTriangle size={18} />
+                    <button 
+                      onClick={() => setShowReport(true)}
+                      className="flex items-center justify-between p-6 bg-rose-50 dark:bg-rose-900/10 rounded-[2rem] border border-rose-100 dark:border-rose-800/30 group hover:bg-rose-100 dark:hover:bg-rose-900/20 transition-all"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="p-3 bg-white dark:bg-gray-800 rounded-xl text-rose-600 dark:text-rose-400 shadow-sm">
+                          <AlertTriangle size={18} />
+                        </div>
+                        <div className="text-left">
+                          <p className="text-[10px] font-black text-rose-900 dark:text-rose-300 uppercase tracking-tight">Report Issue</p>
+                          <p className="text-[8px] font-bold text-rose-700 dark:text-rose-500 uppercase tracking-widest">Safety Support</p>
+                        </div>
                       </div>
-                      <div className="text-left">
-                        <p className="text-[11px] font-black text-rose-900 dark:text-rose-300 uppercase tracking-tight">Report an Issue</p>
-                        <p className="text-[9px] font-bold text-rose-700 dark:text-rose-500 uppercase tracking-widest">Hardware & Safety Support</p>
-                      </div>
-                    </div>
-                    <ChevronRight size={18} className="text-rose-400 group-hover:translate-x-1 transition-transform" />
-                  </button>
+                      <ChevronRight size={16} className="text-rose-400 group-hover:translate-x-1 transition-transform" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
