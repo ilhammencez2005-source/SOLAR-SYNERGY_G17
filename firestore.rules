@@ -91,7 +91,7 @@ service cloud.firestore {
     }
 
     function isValidSession(data) {
-      return hasOnlyAllowedFields(['uid', 'stationId', 'startTime', 'status', 'chargeLevel', 'cost', 'energyConsumed', 'overstayFee', 'preAuthAmount', 'durationLimit', 'timeElapsed', 'completionTime', 'isLocked']) &&
+      return hasOnlyAllowedFields(['uid', 'station', 'mode', 'slotId', 'startTime', 'status', 'reservationCountdown', 'chargeLevel', 'cost', 'energyConsumed', 'overstayFee', 'preAuthAmount', 'durationLimit', 'timeElapsed', 'completionTime', 'isLocked']) &&
              data.uid == request.auth.uid &&
              data.status in ['reserving', 'charging', 'completed', 'overstay'] &&
              data.cost is number && data.cost >= 0;

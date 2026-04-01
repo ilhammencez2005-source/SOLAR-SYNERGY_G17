@@ -63,7 +63,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({ history, onClearHistor
                     <h3 className="font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight">{item.stationName}</h3>
                     <div className="flex items-center gap-2 mt-0.5">
                       <Calendar size={12} className="text-gray-400" />
-                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{item.date}</span>
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{item.date.toLocaleString()}</span>
                     </div>
                   </div>
                 </div>

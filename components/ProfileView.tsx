@@ -137,7 +137,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 className="w-full mt-4 bg-gray-800 border border-emerald-500/30 py-4 rounded-[2rem] font-black text-[9px] uppercase tracking-[0.2em] flex items-center justify-center gap-3 active:scale-95 transition-all text-emerald-400 hover:bg-gray-700"
               >
                 <Zap size={14} fill="currentColor" />
-                TEST: ADD RM 1000.00 CREDITS
+                TEST: ADD RM 50.00 CREDITS
               </button>
 
               {showQr && (
