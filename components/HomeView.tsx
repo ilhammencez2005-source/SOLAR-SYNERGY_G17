@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, memo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { MapPin, Crosshair, CalendarClock, Zap, ArrowRight, Sun, Leaf, X, Star, Clock, Info, Search, Camera, Shield, AlertTriangle } from 'lucide-react';
 import { Station, UserLocation } from '../types';
 import { PRICING } from '../constants';
@@ -16,7 +16,7 @@ interface HomeViewProps {
   onPrebook: (station: Station) => void;
 }
 
-export const HomeView: React.FC<HomeViewProps> = memo(({ userLocation, mapCenter, handleLocateMe, stations, onBookStation, onPrebook }) => {
+export const HomeView: React.FC<HomeViewProps> = ({ userLocation, mapCenter, handleLocateMe, stations, onBookStation, onPrebook }) => {
   const [detailStation, setDetailStation] = useState<Station | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isAROpen, setIsAROpen] = useState(false);
@@ -170,11 +170,10 @@ export const HomeView: React.FC<HomeViewProps> = memo(({ userLocation, mapCenter
                                </button>
                                <button 
                                    onClick={() => onBookStation(station)}
-                                   disabled={!isActive || station.slots === 0}
-                                   className={`bg-gradient-to-br from-emerald-500 to-emerald-700 text-white text-[10px] font-black py-4 rounded-[1.5rem] transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-200/50 dark:shadow-emerald-900/40 hover:shadow-emerald-300/60 active:scale-95 uppercase tracking-widest ${(!isActive || station.slots === 0) ? 'opacity-50 grayscale cursor-not-allowed shadow-none' : ''}`}
+                                   className="bg-gradient-to-br from-emerald-500 to-emerald-700 text-white text-[10px] font-black py-4 rounded-[1.5rem] transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-200/50 dark:shadow-emerald-900/40 hover:shadow-emerald-300/60 active:scale-95 uppercase tracking-widest"
                                >
                                    <Zap size={16} fill="currentColor" />
-                                   {station.slots === 0 ? 'Full' : 'Charge Now'}
+                                   Charge Now
                                </button>
                              </div>
 
@@ -369,4 +368,4 @@ export const HomeView: React.FC<HomeViewProps> = memo(({ userLocation, mapCenter
        )}
     </div>
   );
-});
+};

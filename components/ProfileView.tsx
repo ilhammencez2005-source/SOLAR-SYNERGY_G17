@@ -4,7 +4,6 @@ import { User, Wallet, ShieldCheck, Bluetooth, Loader2, ChevronRight, Zap, QrCod
 import { useTheme } from '../ThemeContext';
 import { PrivacyPolicy } from './PrivacyPolicy';
 import { ReportIssueModal } from './ReportIssueModal';
-import { auth, signOut } from '../firebase';
 
 interface ProfileViewProps {
   walletBalance: number;
@@ -20,8 +19,6 @@ interface ProfileViewProps {
   setWifiIp: (ip: string) => void;
   isWifiConnected: boolean;
   onLogout: () => void;
-  onAddCredits: () => void;
-  userEmail: string | null;
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({ 
@@ -37,9 +34,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   wifiIp,
   setWifiIp,
   isWifiConnected,
-  onLogout,
-  onAddCredits,
-  userEmail
+  onLogout
 }) => {
   const { theme, toggleTheme } = useTheme();
   const [showQr, setShowQr] = useState(false);
@@ -48,15 +43,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [activeTab, setActiveTab] = useState<'wallet' | 'hub' | 'about'>('wallet');
   
   const isBluetoothSupported = typeof navigator !== 'undefined' && !!(navigator as any).bluetooth;
-
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      onLogout();
-    } catch (error) {
-      console.error("Logout Error:", error);
-    }
-  };
 
   const tabs = [
     { id: 'wallet', label: 'Wallet', icon: Wallet },
@@ -73,9 +59,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <User size={40} />
           </div>
           <div>
-            <h2 className="text-xl font-black text-gray-900 dark:text-white tracking-tight leading-none mb-1 uppercase">
-              {auth.currentUser?.displayName || userEmail?.split('@')[0] || "Ilhammencez bin Mohd Rasyidi"}
-            </h2>
+            <h2 className="text-xl font-black text-gray-900 dark:text-white tracking-tight leading-none mb-1 uppercase">Ilhammencez bin Mohd Rasyidi</h2>
             <div className="flex items-center gap-2">
               <ShieldCheck size={14} className="text-emerald-500" />
               <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">VERIFIED USER</span>
@@ -93,7 +77,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex bg-gray-100 dark:bg-gray-900 p-1.5 rounded-[2rem] gap-1 transition-colors">
+      <div className="flex bg-gray-100 p-1.5 rounded-[2rem] gap-1">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -103,8 +87,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               onClick={() => setActiveTab(tab.id)}
               className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all ${
                 isActive 
-                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200 dark:shadow-none scale-[1.02]' 
-                  : 'text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800/50'
+                  ? 'bg-white text-emerald-600 shadow-sm' 
+                  : 'text-gray-400 hover:text-gray-600'
               }`}
             >
               <Icon size={14} />
@@ -133,15 +117,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               >
                 <QrCode size={16} />
                 {showQr ? "HIDE RELOAD DETAILS" : "TOP UP WALLET"}
-              </button>
-
-              {/* Developer Testing: Add Credits */}
-              <button 
-                onClick={onAddCredits}
-                className="w-full mt-4 bg-gray-800 border border-emerald-500/30 py-4 rounded-[2rem] font-black text-[9px] uppercase tracking-[0.2em] flex items-center justify-center gap-3 active:scale-95 transition-all text-emerald-400 hover:bg-gray-700"
-              >
-                <Zap size={14} fill="currentColor" />
-                TEST: ADD RM 50.00 CREDITS
               </button>
 
               {showQr && (
@@ -407,19 +382,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     </p>
                   </div>
 
-                  <div className="p-8 bg-gray-50 dark:bg-gray-900/50 rounded-[2.5rem] border border-gray-100 dark:border-gray-800 space-y-6">
-                    <div className="flex items-center gap-4">
-                      <div className="p-2.5 bg-white dark:bg-gray-800 rounded-xl text-emerald-600 dark:text-emerald-400 shadow-sm">
-                        <ShieldCheck size={18} />
-                      </div>
-                      <p className="text-[11px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Security</p>
-                    </div>
-                    
-                    <p className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 leading-relaxed uppercase tracking-tight">
-                      Your account is protected by Firebase Authentication. All transactions are encrypted and secure.
-                    </p>
-                  </div>
-
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                     <button 
                       onClick={() => setShowPrivacy(true)}
@@ -465,7 +427,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
       <div className="pt-8 pb-12 space-y-6 opacity-50">
         <button 
-          onClick={handleLogout}
+          onClick={onLogout}
           className="w-full py-4 rounded-2xl border-2 border-rose-500/30 text-rose-500 font-black text-[10px] uppercase tracking-[0.3em] hover:bg-rose-500 hover:text-white transition-all active:scale-95"
         >
           Logout Session

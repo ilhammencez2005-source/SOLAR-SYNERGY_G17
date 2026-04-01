@@ -13,7 +13,6 @@ import { ReceiptView } from './components/ReceiptView';
 import { LoginView } from './components/LoginView';
 import { STATIONS, PRICING } from './constants';
 import { Station, Session, UserLocation, ViewState, ChargingMode, Receipt, ChargingHistoryItem } from './types';
-import { auth, db, onAuthStateChanged, doc, getDoc, setDoc, updateDoc, collection, onSnapshot, query, where, addDoc, serverTimestamp, handleFirestoreError, OperationType } from './firebase';
 
 const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
 const CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
@@ -36,221 +35,8 @@ export default function App() {
   const [isBleConnecting, setIsBleConnecting] = useState(false);
   
   // Auth State
-  const [isInitialAuthCheck, setIsInitialAuthCheck] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [isAuthLoading, setIsAuthLoading] = useState(false);
-  const [isSimulation, setIsSimulation] = useState(false);
-  const isSimulationRef = React.useRef(isSimulation);
-
-  // Sync ref with state immediately
-  const setSimulationMode = (val: boolean) => {
-    setIsSimulation(val);
-    isSimulationRef.current = val;
-  };
-
-  const addCredits = async (amount: number) => {
-    const newBalance = walletBalance + amount;
-    setWalletBalance(newBalance);
-    
-    if (auth.currentUser) {
-      try {
-        await updateDoc(doc(db, 'users', auth.currentUser.uid), {
-          walletBalance: newBalance
-        });
-        showNotification(`RM ${amount.toFixed(2)} ADDED TO WALLET`);
-      } catch (error) {
-        console.error("Error updating balance:", error);
-        handleFirestoreError(error, OperationType.UPDATE, `users/${auth.currentUser.uid}`);
-      }
-    } else {
-      showNotification(`RM ${amount.toFixed(2)} ADDED (DEMO MODE)`);
-    }
-  };
-
-  const isLoggedInRef = React.useRef(isLoggedIn);
-  useEffect(() => {
-    isLoggedInRef.current = isLoggedIn;
-  }, [isLoggedIn]);
-
-  // Firebase Auth Listener
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      console.log("Auth state changed:", user ? `User logged in: ${user.email}` : "No user");
-      
-      if (user) {
-        // If we are already logged in, don't trigger a full screen reload
-        if (!isLoggedInRef.current) setIsAuthLoading(true);
-        
-        // Sync user profile/wallet from Firestore
-        const userDocRef = doc(db, 'users', user.uid);
-        try {
-          const userDoc = await getDoc(userDocRef);
-          if (userDoc.exists()) {
-            setWalletBalance(userDoc.data().walletBalance);
-          } else {
-            // Create initial user profile
-            const newUser = {
-              uid: user.uid,
-              email: user.email,
-              displayName: user.displayName,
-              walletBalance: 50.00,
-              createdAt: serverTimestamp(),
-              role: 'client'
-            };
-            await setDoc(userDocRef, newUser);
-            setWalletBalance(50.00);
-          }
-          
-          // Only set logged in after we have the profile
-          setIsLoggedIn(true);
-          setSimulationMode(false);
-          setUserEmail(user.email);
-        } catch (error) {
-          console.error("Error syncing user profile:", error);
-          // Fallback to basic login if Firestore fails
-          setIsLoggedIn(true);
-          setSimulationMode(false);
-          setUserEmail(user.email);
-        } finally {
-          setIsAuthLoading(false);
-          setIsInitialAuthCheck(false);
-        }
-      } else {
-        // Only clear if we're not in simulation mode
-        if (!isSimulationRef.current) {
-          setIsLoggedIn(false);
-          setUserEmail(null);
-        }
-        setIsAuthLoading(false);
-        setIsInitialAuthCheck(false);
-      }
-    });
-    
-    return () => unsubscribe();
-  }, []); // Only register ONCE
-
-  // Sync Stations from Firestore
-  useEffect(() => {
-    if (!isLoggedIn) return;
-    
-    const q = query(collection(db, 'stations'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      if (snapshot.empty) {
-        // Seed stations if empty (first time)
-        STATIONS.forEach(async (s) => {
-          try {
-            await setDoc(doc(db, 'stations', s.id.toString()), s);
-          } catch (error) {
-            console.error("Error seeding station:", error);
-          }
-        });
-      } else {
-        const updatedStations = snapshot.docs.map(doc => doc.data() as Station);
-        setStations(prev => {
-          if (JSON.stringify(prev) === JSON.stringify(updatedStations)) return prev;
-          return updatedStations;
-        });
-      }
-    }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'stations');
-    });
-    
-    return () => unsubscribe();
-  }, [isLoggedIn]);
-
-  // Sync History from Firestore
-  useEffect(() => {
-    if (!isLoggedIn) return;
-    
-    // If simulation mode, we don't sync from Firestore
-    if (isSimulation || !auth.currentUser) {
-      console.log("Simulation mode or no Firebase user, providing mock history");
-      setChargingHistory([
-        {
-          id: 'demo-1',
-          stationName: 'Solar Synergy Hub A',
-          date: new Date(Date.now() - 86400000),
-          endTime: new Date(Date.now() - 86400000 + 3600000),
-          amount: 12.50,
-          energy: 25.0,
-          duration: '60m',
-          co2Saved: '11.9g',
-          status: 'Completed'
-        },
-        {
-          id: 'demo-2',
-          stationName: 'Green Charge Point 1',
-          date: new Date(Date.now() - 172800000),
-          endTime: new Date(Date.now() - 172800000 + 1800000),
-          amount: 6.25,
-          energy: 12.5,
-          duration: '30m',
-          co2Saved: '5.9g',
-          status: 'Completed'
-        }
-      ]);
-      return;
-    }
-    
-    console.log("Starting history sync for UID:", auth.currentUser.uid);
-    const q = query(collection(db, 'sessions'), where('uid', '==', auth.currentUser.uid));
-    
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      console.log("History snapshot received, size:", snapshot.size);
-      const history = snapshot.docs
-        .map(doc => {
-          const data = doc.data();
-          
-          // Robust date handling
-          let startTime: Date;
-          try {
-            startTime = data.startTime?.toDate?.() || new Date(data.startTime);
-            if (isNaN(startTime.getTime())) startTime = new Date();
-          } catch (e) {
-            startTime = new Date();
-          }
-
-          let completionTime: Date | null = null;
-          try {
-            if (data.completionTime) {
-              const parsedTime = data.completionTime?.toDate?.() || new Date(data.completionTime);
-              if (!isNaN(parsedTime.getTime())) {
-                completionTime = parsedTime;
-              }
-            }
-          } catch (e) {
-            completionTime = null;
-          }
-          
-          const energy = Number(data.energyConsumed || (data.cost / PRICING.rate) || 0);
-          const co2Saved = (energy * 0.475).toFixed(1);
-
-          return {
-            id: doc.id,
-            stationName: data.station?.name || 'Unknown Station',
-            date: startTime,
-            endTime: completionTime || undefined,
-            amount: Number((data.cost || 0) + (data.overstayFee || 0)),
-            energy: energy,
-            duration: completionTime ? 
-              `${Math.floor((completionTime.getTime() - startTime.getTime()) / 60000)}m` : 
-              'Active',
-            co2Saved: `${co2Saved}g`,
-            status: data.status === 'completed' ? 'Completed' : 'Active'
-          } as ChargingHistoryItem;
-        })
-        .sort((a, b) => b.date.getTime() - a.date.getTime());
-      
-      console.log("Final history items count:", history.length);
-      setChargingHistory(history);
-    }, (error) => {
-      console.error("History sync error:", error);
-      // Don't throw here to avoid crashing the app
-    });
-    
-    return () => unsubscribe();
-  }, [isLoggedIn, isSimulation, auth.currentUser?.uid]);
 
   // WiFi State
   const [connectionMode, setConnectionMode] = useState<'ble' | 'wifi'>('ble');
@@ -266,12 +52,16 @@ export default function App() {
       const isOccupied = value.includes("OCCUPIED") || value.includes("VIBRATION_ALERT");
       const isVacant = value.includes("AVAILABLE") || value.includes("VACANT");
       
-      // Sync to Firestore
-      const stationRef = doc(db, 'stations', '4'); // Village 4 is ID 4
-      updateDoc(stationRef, {
-        status: isOccupied ? "Occupied" : "Active",
-        slots: isOccupied ? 0 : 1
-      }).catch(err => handleFirestoreError(err, OperationType.UPDATE, 'stations/4'));
+      setStations(prev => prev.map(s => {
+        if (s.name === "Village 4") {
+          return {
+            ...s,
+            status: isOccupied ? "Occupied" : "Active",
+            slots: isOccupied ? 0 : 1
+          };
+        }
+        return s;
+      }));
       
       if (value.includes("VIBRATION_ALERT")) {
         if (!lastVibState) {
@@ -430,14 +220,12 @@ export default function App() {
           const data = await res.text();
           if (data.includes("OCCUPIED") || data.includes("AVAILABLE") || data.includes("VACANT") || data.includes("VIBRATION_ALERT")) {
             const isOccupied = data.includes("OCCUPIED") || data.includes("VIBRATION_ALERT");
-            
-            // Sync to Firestore
-            const stationRef = doc(db, 'stations', '4');
-            updateDoc(stationRef, {
-              status: isOccupied ? "Occupied" : "Active",
-              slots: isOccupied ? 0 : 1
-            }).catch(err => handleFirestoreError(err, OperationType.UPDATE, 'stations/4'));
-            
+            setStations(prev => prev.map(s => {
+              if (s.name === "Village 4") {
+                return { ...s, status: isOccupied ? "Occupied" : "Active", slots: isOccupied ? 0 : 1 };
+              }
+              return s;
+            }));
             setIsWifiConnected(true);
             
             if (data.includes("VIBRATION_ALERT")) {
@@ -557,32 +345,19 @@ export default function App() {
 
   const startCharging = async (mode: ChargingMode, slotId: string, duration: number | 'full', preAuth: number) => {
     if (preAuth > walletBalance) return showNotification("INSUFFICIENT CREDITS");
-    if (!isLoggedIn) return showNotification("LOGIN REQUIRED");
-    
-    console.log("Starting charge for user:", auth.currentUser?.uid || 'demo-user');
     
     // Only lock immediately if NOT in reservation mode
     if (!isReservationMode) {
       const locked = await sendCommand('LOCK');
       if (!locked && (bleCharacteristic || wifiIp)) {
-        showNotification("WARNING: HUB FAILED TO HUB LOCK");
+        showNotification("WARNING: HUB FAILED TO LOCK");
       }
     } else {
       showNotification("RESERVATION ACTIVE - PARK YOUR SCOOTER");
     }
     
-    const newBalance = walletBalance - preAuth;
-    setWalletBalance(newBalance);
-    
-    // Sync wallet to Firestore if real user
-    if (auth.currentUser) {
-      const userDocRef = doc(db, 'users', auth.currentUser.uid);
-      updateDoc(userDocRef, { walletBalance: newBalance })
-        .catch(err => handleFirestoreError(err, OperationType.UPDATE, `users/${auth.currentUser?.uid}`));
-    }
-
-    const sessionData = { 
-      uid: auth.currentUser?.uid || 'demo-user',
+    setWalletBalance(p => p - preAuth);
+    setActiveSession({ 
       station: selectedStation!, 
       mode, 
       slotId, 
@@ -596,29 +371,12 @@ export default function App() {
       durationLimit: duration, 
       timeElapsed: 0, 
       isLocked: !isReservationMode 
-    };
-
-    // Save session to Firestore if real user
-    if (auth.currentUser) {
-      try {
-        console.log("Attempting to save session to Firestore with data:", sessionData);
-        const sessionRef = await addDoc(collection(db, 'sessions'), sessionData);
-        console.log("Session saved successfully with ID:", sessionRef.id);
-        setActiveSession({ ...sessionData, id: sessionRef.id } as any);
-      } catch (error) {
-        console.error("Failed to save session to Firestore:", error);
-        handleFirestoreError(error, OperationType.CREATE, 'sessions');
-      }
-    } else {
-      // Simulation mode
-      setActiveSession({ ...sessionData, id: 'demo-' + Date.now() } as any);
-    }
-    
+    });
     setView('charging');
   };
 
   const endSession = async (cur = activeSession) => {
-    if (!cur || !isLoggedIn) return;
+    if (!cur) return;
     
     await sendCommand('UNLOCK');
 
@@ -627,28 +385,20 @@ export default function App() {
     const energy = cur.cost / PRICING.rate; 
     const co2Saved = (energy * 0.475).toFixed(1); // 475g per kWh
     
-    const newBalance = walletBalance + refund;
-    setWalletBalance(newBalance);
-
-    // Sync wallet to Firestore if real user
-    if (auth.currentUser) {
-      const userDocRef = doc(db, 'users', auth.currentUser.uid);
-      updateDoc(userDocRef, { walletBalance: newBalance })
-        .catch(err => handleFirestoreError(err, OperationType.UPDATE, `users/${auth.currentUser?.uid}`));
-
-      // Update session in Firestore
-      if ((cur as any).id) {
-        const sessionRef = doc(db, 'sessions', (cur as any).id);
-        updateDoc(sessionRef, {
-          status: 'completed',
-          completionTime: new Date(),
-          cost: cur.cost,
-          overstayFee: cur.overstayFee,
-          energyConsumed: energy
-        }).catch(err => handleFirestoreError(err, OperationType.UPDATE, `sessions/${(cur as any).id}`));
-      }
-    }
+    setWalletBalance(p => p + refund);
     
+    const historyItem: ChargingHistoryItem = {
+      id: Date.now(),
+      stationName: cur.station.name,
+      date: new Date().toLocaleString(),
+      amount: totalCost,
+      energy: energy,
+      duration: `${Math.floor(cur.timeElapsed / 60)}m ${cur.timeElapsed % 60}s`,
+      co2Saved: `${co2Saved}g`,
+      status: 'Completed'
+    };
+    
+    setChargingHistory(prev => [historyItem, ...prev]);
     setReceipt({ 
       stationName: cur.station.name, 
       date: new Date().toLocaleString(), 
@@ -656,7 +406,7 @@ export default function App() {
       totalEnergy: `${energy.toFixed(1)}Wh`, 
       mode: cur.mode, 
       cost: cur.cost, 
-      overstayFee: cur.overstayFee, 
+      overstayFee: cur.overstayFee,
       paid: totalCost, 
       refund: refund,
       co2Saved: `${co2Saved}g`
@@ -667,23 +417,8 @@ export default function App() {
     setView('receipt');
   };
 
-  if (isInitialAuthCheck || isAuthLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin" />
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest animate-pulse">Synchronizing Hub...</p>
-        </div>
-      </div>
-    );
-  }
-
   if (!isLoggedIn) {
-    return <LoginView onLogin={(email) => { 
-      setIsLoggedIn(true); 
-      setUserEmail(email); 
-      if (email.includes('solarsynergy.com')) setSimulationMode(true);
-    }} />;
+    return <LoginView onLogin={(email) => { setIsLoggedIn(true); setUserEmail(email); }} />;
   }
 
   return (
@@ -738,8 +473,6 @@ export default function App() {
           {view === 'profile' && (
             <ProfileView 
               walletBalance={walletBalance} 
-              onAddCredits={() => addCredits(50.00)}
-              userEmail={userEmail}
               isBleConnected={!!bleCharacteristic}
               isBleConnecting={isBleConnecting}
               bleDeviceName={bleDevice?.name}
@@ -751,13 +484,7 @@ export default function App() {
               wifiIp={wifiIp}
               setWifiIp={setWifiIp}
               isWifiConnected={isWifiConnected}
-              onLogout={() => { 
-                setIsLoggedIn(false); 
-                setUserEmail(null); 
-                setSimulationMode(false);
-                setChargingHistory([]); // Clear history on logout
-                setView('home'); 
-              }}
+              onLogout={() => { setIsLoggedIn(false); setUserEmail(null); setView('home'); }}
             />
           )}
           {view === 'assistant' && (

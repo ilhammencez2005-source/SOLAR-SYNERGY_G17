@@ -1,8 +1,7 @@
 
 import React, { useState } from 'react';
-import { Zap, Mail, Lock, ArrowRight, ShieldCheck, Github, Chrome, AlertCircle } from 'lucide-react';
+import { Zap, Mail, Lock, ArrowRight, ShieldCheck, Github, Chrome } from 'lucide-react';
 import { motion } from 'motion/react';
-import { auth, googleProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from '../firebase';
 
 interface LoginViewProps {
   onLogin: (email: string) => void;
@@ -12,91 +11,15 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isSignUp, setIsSignUp] = useState(false);
 
-  const handleSimulationFallback = (emailToUse?: string) => {
-    console.warn("Using simulation fallback...");
-    setTimeout(() => {
-      onLogin(emailToUse || email || 'demo@solarsynergy.com');
-      setIsLoading(false);
-    }, 1000);
-  };
-
-  const isSimulationError = (err: any) => {
-    const code = err?.code || '';
-    const message = (err?.message || '').toLowerCase();
-    const isUnauthorized = code === 'auth/unauthorized-domain' || message.includes('unauthorized-domain');
-    const isConfigMissing = code === 'auth/configuration-not-found' || message.includes('configuration-not-found');
-    
-    if (isUnauthorized) {
-      console.error("UNAUTHORIZED DOMAIN DETECTED. Please add this domain to Firebase Console > Auth > Settings > Authorized Domains.");
-    }
-
-    // Only fallback automatically if it's a configuration/domain error
-    // or if the user is explicitly using a solarsynergy.com email
-    return isUnauthorized || isConfigMissing || (email.includes('solarsynergy.com') && code === 'auth/user-not-found');
-  };
-
-  const handleGoogleLogin = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      await signInWithPopup(auth, googleProvider);
-      // onLogin is not needed here as onAuthStateChanged in App.tsx handles the state transition
-    } catch (err: any) {
-      console.error("Google Login Error:", err);
-      if (isSimulationError(err)) {
-        handleSimulationFallback();
-        return;
-      }
-      setError(err.message || "Google Login failed. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError(null);
-    console.log(`Attempting ${isSignUp ? 'Sign Up' : 'Sign In'} for: ${email}`);
-
-    try {
-      if (isSignUp) {
-        await createUserWithEmailAndPassword(auth, email, password);
-      } else {
-        await signInWithEmailAndPassword(auth, email, password);
-      }
-      console.log("Auth operation successful");
-      // onLogin is not needed here as onAuthStateChanged in App.tsx handles the state transition
-    } catch (err: any) {
-      console.error("Auth Error:", err.code, err.message);
-      if (err.code === 'auth/operation-not-allowed') {
-        setError("Email/Password login is not enabled in the Firebase Console. Please enable it under Authentication > Sign-in method.");
-        return;
-      }
-      if (isSimulationError(err)) {
-        handleSimulationFallback();
-        return;
-      }
-      setError(err.message || "Authentication failed. Please check your credentials.");
-    } finally {
-      if (!isSignUp || error) setIsLoading(false);
-    }
-  };
-
-  const handleForgotPassword = async () => {
-    if (!email) {
-      setError("Please enter your email address first.");
-      return;
-    }
-    try {
-      await sendPasswordResetEmail(auth, email);
-      alert("Password reset email sent!");
-    } catch (err: any) {
-      setError(err.message);
-    }
+    // Simulate login
+    setTimeout(() => {
+      onLogin(email || 'demo@solarsynergy.com');
+      setIsLoading(false);
+    }, 1500);
   };
 
   return (
@@ -121,33 +44,6 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
 
         {/* Form Section */}
         <div className="bg-white dark:bg-gray-900 p-8 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-800 space-y-6">
-          {error && (
-            <div className="bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 p-4 rounded-2xl space-y-3 animate-shake">
-              <div className="text-[10px] font-black uppercase tracking-widest flex items-center gap-3">
-                <AlertCircle size={16} />
-                <span className="flex-1">{error}</span>
-              </div>
-              {(error.includes('unauthorized-domain') || error.includes('Unauthorized') || error.includes('invalid-action') || error.includes('requested action is invalid')) && (
-                <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800/30 rounded-2xl space-y-2">
-                  <p className="text-[9px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-widest">Login Troubleshooting:</p>
-                  <ul className="text-[8px] font-bold text-amber-600 dark:text-amber-500 space-y-1 list-disc pl-3 uppercase tracking-tight">
-                    <li>Enable Google Sign-In in Firebase Console</li>
-                    <li>Add {window.location.hostname} to Authorized Domains</li>
-                    <li>Ensure your API Key is not restricted</li>
-                  </ul>
-                </div>
-              )}
-              {isSimulationError({ message: error }) && (
-                <button 
-                  onClick={() => handleSimulationFallback()}
-                  className="w-full py-2 bg-rose-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-rose-700 transition-colors"
-                >
-                  Enter Demo Mode Instead
-                </button>
-              )}
-            </div>
-          )}
-
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-4">Email Address</label>
@@ -179,17 +75,11 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
               </div>
             </div>
 
-            {!isSignUp && (
-              <div className="flex justify-end">
-                <button 
-                  type="button" 
-                  onClick={handleForgotPassword}
-                  className="text-[10px] font-black text-emerald-600 uppercase tracking-widest hover:underline"
-                >
-                  Forgot Password?
-                </button>
-              </div>
-            )}
+            <div className="flex justify-end">
+              <button type="button" className="text-[10px] font-black text-emerald-600 uppercase tracking-widest hover:underline">
+                Forgot Password?
+              </button>
+            </div>
 
             <button 
               type="submit" 
@@ -200,7 +90,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
-                  {isSignUp ? "Create Account" : "Enter Hub"}
+                  Enter Hub
                   <ArrowRight size={18} />
                 </>
               )}
@@ -217,19 +107,13 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <button 
-              onClick={handleGoogleLogin}
-              className="flex items-center justify-center gap-2 py-4 bg-gray-50 dark:bg-gray-800 rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            >
+            <button className="flex items-center justify-center gap-2 py-4 bg-gray-50 dark:bg-gray-800 rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
               <Chrome size={18} className="text-gray-600 dark:text-gray-400" />
               <span className="text-[10px] font-black uppercase tracking-widest">Google</span>
             </button>
-            <button 
-              onClick={() => handleSimulationFallback()}
-              className="flex items-center justify-center gap-2 py-4 bg-gray-50 dark:bg-gray-800 rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            >
-              <Zap size={18} className="text-emerald-600" />
-              <span className="text-[10px] font-black uppercase tracking-widest">Demo Hub</span>
+            <button className="flex items-center justify-center gap-2 py-4 bg-gray-50 dark:bg-gray-800 rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+              <Github size={18} className="text-gray-600 dark:text-gray-400" />
+              <span className="text-[10px] font-black uppercase tracking-widest">GitHub</span>
             </button>
           </div>
         </div>
@@ -237,13 +121,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
         {/* Footer */}
         <div className="text-center space-y-4">
           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-            {isSignUp ? "Already have an account?" : "Don't have an account?"} 
-            <button 
-              onClick={() => setIsSignUp(!isSignUp)}
-              className="text-emerald-600 hover:underline ml-2"
-            >
-              {isSignUp ? "Sign In" : "Create One"}
-            </button>
+            Don't have an account? <button className="text-emerald-600 hover:underline">Create One</button>
           </p>
           
           <div className="flex items-center justify-center gap-2 text-gray-400">
