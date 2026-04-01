@@ -170,10 +170,11 @@ export const HomeView: React.FC<HomeViewProps> = ({ userLocation, mapCenter, han
                                </button>
                                <button 
                                    onClick={() => onBookStation(station)}
-                                   className="bg-gradient-to-br from-emerald-500 to-emerald-700 text-white text-[10px] font-black py-4 rounded-[1.5rem] transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-200/50 dark:shadow-emerald-900/40 hover:shadow-emerald-300/60 active:scale-95 uppercase tracking-widest"
+                                   disabled={!isActive || station.slots === 0}
+                                   className={`bg-gradient-to-br from-emerald-500 to-emerald-700 text-white text-[10px] font-black py-4 rounded-[1.5rem] transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-200/50 dark:shadow-emerald-900/40 hover:shadow-emerald-300/60 active:scale-95 uppercase tracking-widest ${(!isActive || station.slots === 0) ? 'opacity-50 grayscale cursor-not-allowed shadow-none' : ''}`}
                                >
                                    <Zap size={16} fill="currentColor" />
-                                   Charge Now
+                                   {station.slots === 0 ? 'Full' : 'Charge Now'}
                                </button>
                              </div>
 
