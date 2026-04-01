@@ -15,6 +15,27 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
   const [error, setError] = useState<string | null>(null);
   const [isSignUp, setIsSignUp] = useState(false);
 
+  const handleSimulationFallback = (emailToUse?: string) => {
+    console.warn("Using simulation fallback...");
+    setTimeout(() => {
+      onLogin(emailToUse || email || 'demo@solarsynergy.com');
+      setIsLoading(false);
+    }, 1000);
+  };
+
+  const isSimulationError = (err: any) => {
+    const code = err?.code || '';
+    const message = (err?.message || '').toLowerCase();
+    return [
+      'auth/operation-not-allowed', 
+      'auth/user-not-found', 
+      'auth/configuration-not-found',
+      'auth/unauthorized-domain'
+    ].includes(code) || 
+    message.includes('unauthorized-domain') || 
+    message.includes('configuration-not-found');
+  };
+
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     setError(null);
@@ -23,9 +44,13 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
       if (result.user.email) {
         onLogin(result.user.email);
       }
-    } catch (error: any) {
-      console.error("Google Login Error:", error);
-      setError(error.message || "Google Login failed. Please try again.");
+    } catch (err: any) {
+      console.error("Google Login Error:", err);
+      if (isSimulationError(err)) {
+        handleSimulationFallback();
+        return;
+      }
+      setError(err.message || "Google Login failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -46,20 +71,8 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
       }
     } catch (err: any) {
       console.error("Auth Error:", err);
-      // Fallback to simulation for demo if provider is not enabled or domain is not authorized
-      const simulationErrors = [
-        'auth/operation-not-allowed', 
-        'auth/user-not-found', 
-        'auth/configuration-not-found',
-        'auth/unauthorized-domain'
-      ];
-      
-      if (simulationErrors.includes(err.code)) {
-        console.warn(`Firebase Auth error (${err.code}), using simulation...`);
-        setTimeout(() => {
-          onLogin(email || 'demo@solarsynergy.com');
-          setIsLoading(false);
-        }, 1500);
+      if (isSimulationError(err)) {
+        handleSimulationFallback();
         return;
       }
       setError(err.message || "Authentication failed. Please check your credentials.");
@@ -104,9 +117,19 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
         {/* Form Section */}
         <div className="bg-white dark:bg-gray-900 p-8 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-800 space-y-6">
           {error && (
-            <div className="bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 p-4 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3 animate-shake">
-              <AlertCircle size={16} />
-              {error}
+            <div className="bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 p-4 rounded-2xl space-y-3 animate-shake">
+              <div className="text-[10px] font-black uppercase tracking-widest flex items-center gap-3">
+                <AlertCircle size={16} />
+                {error}
+              </div>
+              {isSimulationError({ message: error }) && (
+                <button 
+                  onClick={() => handleSimulationFallback()}
+                  className="w-full py-2 bg-rose-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-rose-700 transition-colors"
+                >
+                  Enter Demo Mode Instead
+                </button>
+              )}
             </div>
           )}
 
@@ -181,14 +204,17 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
           <div className="grid grid-cols-2 gap-4">
             <button 
               onClick={handleGoogleLogin}
-              className="flex items-center justify-center gap-2 py-4 bg-gray-50 dark:bg-gray-800 rounded-2xl hover:bg-gray-100 dark:hover:hover:bg-gray-700 transition-colors"
+              className="flex items-center justify-center gap-2 py-4 bg-gray-50 dark:bg-gray-800 rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             >
               <Chrome size={18} className="text-gray-600 dark:text-gray-400" />
               <span className="text-[10px] font-black uppercase tracking-widest">Google</span>
             </button>
-            <button className="flex items-center justify-center gap-2 py-4 bg-gray-50 dark:bg-gray-800 rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-              <Github size={18} className="text-gray-600 dark:text-gray-400" />
-              <span className="text-[10px] font-black uppercase tracking-widest">GitHub</span>
+            <button 
+              onClick={() => handleSimulationFallback()}
+              className="flex items-center justify-center gap-2 py-4 bg-gray-50 dark:bg-gray-800 rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
+              <Zap size={18} className="text-emerald-600" />
+              <span className="text-[10px] font-black uppercase tracking-widest">Demo Hub</span>
             </button>
           </div>
         </div>
