@@ -40,13 +40,15 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [isSimulation, setIsSimulation] = useState(false);
 
   // Firebase Auth Listener
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setIsAuthLoading(true);
       if (user) {
+        setIsAuthLoading(true);
         setIsLoggedIn(true);
+        setIsSimulation(false);
         setUserEmail(user.email);
         
         // Sync user profile/wallet from Firestore
@@ -71,15 +73,19 @@ export default function App() {
         } catch (error) {
           handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
         }
+        setIsAuthLoading(false);
       } else {
-        setIsLoggedIn(false);
-        setUserEmail(null);
+        // Only clear if we're not in simulation mode
+        if (!isSimulation) {
+          setIsLoggedIn(false);
+          setUserEmail(null);
+        }
+        setIsAuthLoading(false);
       }
-      setIsAuthLoading(false);
     });
     
     return () => unsubscribe();
-  }, []);
+  }, [isSimulation]);
 
   // Sync Stations from Firestore
   useEffect(() => {
@@ -488,13 +494,13 @@ export default function App() {
 
   const startCharging = async (mode: ChargingMode, slotId: string, duration: number | 'full', preAuth: number) => {
     if (preAuth > walletBalance) return showNotification("INSUFFICIENT CREDITS");
-    if (!auth.currentUser) return showNotification("LOGIN REQUIRED");
+    if (!isLoggedIn) return showNotification("LOGIN REQUIRED");
     
     // Only lock immediately if NOT in reservation mode
     if (!isReservationMode) {
       const locked = await sendCommand('LOCK');
       if (!locked && (bleCharacteristic || wifiIp)) {
-        showNotification("WARNING: HUB FAILED TO LOCK");
+        showNotification("WARNING: HUB FAILED TO HUB LOCK");
       }
     } else {
       showNotification("RESERVATION ACTIVE - PARK YOUR SCOOTER");
@@ -503,13 +509,15 @@ export default function App() {
     const newBalance = walletBalance - preAuth;
     setWalletBalance(newBalance);
     
-    // Sync wallet to Firestore
-    const userDocRef = doc(db, 'users', auth.currentUser.uid);
-    updateDoc(userDocRef, { walletBalance: newBalance })
-      .catch(err => handleFirestoreError(err, OperationType.UPDATE, `users/${auth.currentUser?.uid}`));
+    // Sync wallet to Firestore if real user
+    if (auth.currentUser) {
+      const userDocRef = doc(db, 'users', auth.currentUser.uid);
+      updateDoc(userDocRef, { walletBalance: newBalance })
+        .catch(err => handleFirestoreError(err, OperationType.UPDATE, `users/${auth.currentUser?.uid}`));
+    }
 
     const sessionData = { 
-      uid: auth.currentUser.uid,
+      uid: auth.currentUser?.uid || 'demo-user',
       station: selectedStation!, 
       mode, 
       slotId, 
@@ -525,19 +533,24 @@ export default function App() {
       isLocked: !isReservationMode 
     };
 
-    // Save session to Firestore
-    try {
-      const sessionRef = await addDoc(collection(db, 'sessions'), sessionData);
-      setActiveSession({ ...sessionData, id: sessionRef.id } as any);
-    } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, 'sessions');
+    // Save session to Firestore if real user
+    if (auth.currentUser) {
+      try {
+        const sessionRef = await addDoc(collection(db, 'sessions'), sessionData);
+        setActiveSession({ ...sessionData, id: sessionRef.id } as any);
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, 'sessions');
+      }
+    } else {
+      // Simulation mode
+      setActiveSession({ ...sessionData, id: 'demo-' + Date.now() } as any);
     }
     
     setView('charging');
   };
 
   const endSession = async (cur = activeSession) => {
-    if (!cur || !auth.currentUser) return;
+    if (!cur || !isLoggedIn) return;
     
     await sendCommand('UNLOCK');
 
@@ -549,21 +562,23 @@ export default function App() {
     const newBalance = walletBalance + refund;
     setWalletBalance(newBalance);
 
-    // Sync wallet to Firestore
-    const userDocRef = doc(db, 'users', auth.currentUser.uid);
-    updateDoc(userDocRef, { walletBalance: newBalance })
-      .catch(err => handleFirestoreError(err, OperationType.UPDATE, `users/${auth.currentUser?.uid}`));
+    // Sync wallet to Firestore if real user
+    if (auth.currentUser) {
+      const userDocRef = doc(db, 'users', auth.currentUser.uid);
+      updateDoc(userDocRef, { walletBalance: newBalance })
+        .catch(err => handleFirestoreError(err, OperationType.UPDATE, `users/${auth.currentUser?.uid}`));
 
-    // Update session in Firestore
-    if ((cur as any).id) {
-      const sessionRef = doc(db, 'sessions', (cur as any).id);
-      updateDoc(sessionRef, {
-        status: 'completed',
-        completionTime: new Date(),
-        cost: cur.cost,
-        overstayFee: cur.overstayFee,
-        energyConsumed: energy
-      }).catch(err => handleFirestoreError(err, OperationType.UPDATE, `sessions/${(cur as any).id}`));
+      // Update session in Firestore
+      if ((cur as any).id) {
+        const sessionRef = doc(db, 'sessions', (cur as any).id);
+        updateDoc(sessionRef, {
+          status: 'completed',
+          completionTime: new Date(),
+          cost: cur.cost,
+          overstayFee: cur.overstayFee,
+          energyConsumed: energy
+        }).catch(err => handleFirestoreError(err, OperationType.UPDATE, `sessions/${(cur as any).id}`));
+      }
     }
     
     setReceipt({ 
@@ -593,7 +608,11 @@ export default function App() {
   }
 
   if (!isLoggedIn) {
-    return <LoginView onLogin={(email) => { setIsLoggedIn(true); setUserEmail(email); }} />;
+    return <LoginView onLogin={(email) => { 
+      setIsLoggedIn(true); 
+      setUserEmail(email); 
+      if (email.includes('solarsynergy.com')) setIsSimulation(true);
+    }} />;
   }
 
   return (
