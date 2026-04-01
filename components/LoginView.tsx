@@ -46,10 +46,8 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
     setIsLoading(true);
     setError(null);
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      if (result.user.email) {
-        onLogin(result.user.email);
-      }
+      await signInWithPopup(auth, googleProvider);
+      // onLogin is not needed here as onAuthStateChanged in App.tsx handles the state transition
     } catch (err: any) {
       console.error("Google Login Error:", err);
       if (isSimulationError(err)) {
@@ -69,12 +67,11 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
 
     try {
       if (isSignUp) {
-        const result = await createUserWithEmailAndPassword(auth, email, password);
-        if (result.user.email) onLogin(result.user.email);
+        await createUserWithEmailAndPassword(auth, email, password);
       } else {
-        const result = await signInWithEmailAndPassword(auth, email, password);
-        if (result.user.email) onLogin(result.user.email);
+        await signInWithEmailAndPassword(auth, email, password);
       }
+      // onLogin is not needed here as onAuthStateChanged in App.tsx handles the state transition
     } catch (err: any) {
       console.error("Auth Error:", err);
       if (isSimulationError(err)) {

@@ -22,7 +22,7 @@ export default function App() {
   const [view, setView] = useState<ViewState>('home'); 
   const [selectedStation, setSelectedStation] = useState<Station | null>(null);
   const [activeSession, setActiveSession] = useState<Session | null>(null);
-  const [walletBalance, setWalletBalance] = useState(100.00);
+  const [walletBalance, setWalletBalance] = useState(5000.00);
   const [notification, setNotification] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null); 
   const [receipt, setReceipt] = useState<Receipt | null>(null);
@@ -644,7 +644,7 @@ export default function App() {
           {view === 'profile' && (
             <ProfileView 
               walletBalance={walletBalance} 
-              onAddCredits={() => addCredits(50.00)}
+              onAddCredits={() => addCredits(1000.00)}
               isBleConnected={!!bleCharacteristic}
               isBleConnecting={isBleConnecting}
               bleDeviceName={bleDevice?.name}
