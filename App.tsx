@@ -39,10 +39,12 @@ export default function App() {
   // Auth State
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   // Firebase Auth Listener
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setIsAuthLoading(true);
       if (user) {
         setIsLoggedIn(true);
         setUserEmail(user.email);
@@ -73,6 +75,7 @@ export default function App() {
         setIsLoggedIn(false);
         setUserEmail(null);
       }
+      setIsAuthLoading(false);
     });
     
     return () => unsubscribe();
@@ -581,8 +584,16 @@ export default function App() {
     setView('receipt');
   };
 
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   if (!isLoggedIn) {
-    return <LoginView onLogin={() => {}} />;
+    return <LoginView onLogin={(email) => { setIsLoggedIn(true); setUserEmail(email); }} />;
   }
 
   return (

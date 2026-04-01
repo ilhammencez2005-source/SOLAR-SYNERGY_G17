@@ -1,6 +1,6 @@
 
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, User as FirebaseUser, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, onSnapshot, query, where, addDoc, serverTimestamp, getDocFromServer, FirestoreError } from 'firebase/firestore';
 import { getMessaging, getToken, onMessage, Messaging } from 'firebase/messaging';
 
@@ -44,8 +44,14 @@ export interface FirestoreErrorInfo {
 }
 
 export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const message = error instanceof Error ? error.message : String(error);
+  
+  if (message.includes('Quota exceeded')) {
+    alert("Firestore Quota Exceeded. The free tier limit has been reached. It will reset tomorrow.");
+  }
+
   const errInfo: FirestoreErrorInfo = {
-    error: error instanceof Error ? error.message : String(error),
+    error: message,
     authInfo: {
       userId: auth.currentUser?.uid,
       email: auth.currentUser?.email,
@@ -82,6 +88,9 @@ export {
   signInWithPopup, 
   signOut, 
   onAuthStateChanged, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  sendPasswordResetEmail,
   doc, 
   getDoc, 
   setDoc, 

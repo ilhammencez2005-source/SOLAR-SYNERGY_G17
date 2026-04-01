@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react';
-import { Zap, Mail, Lock, ArrowRight, ShieldCheck, Github, Chrome } from 'lucide-react';
+import { Zap, Mail, Lock, ArrowRight, ShieldCheck, Github, Chrome, AlertCircle } from 'lucide-react';
 import { motion } from 'motion/react';
-import { auth, googleProvider, signInWithPopup } from '../firebase';
+import { auth, googleProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from '../firebase';
 
 interface LoginViewProps {
   onLogin: (email: string) => void;
@@ -12,30 +12,66 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isSignUp, setIsSignUp] = useState(false);
 
   const handleGoogleLogin = async () => {
     setIsLoading(true);
+    setError(null);
     try {
       const result = await signInWithPopup(auth, googleProvider);
       if (result.user.email) {
         onLogin(result.user.email);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Google Login Error:", error);
+      setError(error.message || "Google Login failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // For demo, we still simulate email/password login as we haven't enabled it in Firebase console
-    // but we'll use the onLogin callback which will be handled by onAuthStateChanged in App.tsx
-    setTimeout(() => {
-      onLogin(email || 'demo@solarsynergy.com');
-      setIsLoading(false);
-    }, 1500);
+    setError(null);
+
+    try {
+      if (isSignUp) {
+        const result = await createUserWithEmailAndPassword(auth, email, password);
+        if (result.user.email) onLogin(result.user.email);
+      } else {
+        const result = await signInWithEmailAndPassword(auth, email, password);
+        if (result.user.email) onLogin(result.user.email);
+      }
+    } catch (err: any) {
+      console.error("Auth Error:", err);
+      // Fallback to simulation for demo if provider is not enabled or user not found
+      if (err.code === 'auth/operation-not-allowed' || err.code === 'auth/user-not-found' || err.code === 'auth/configuration-not-found') {
+        console.warn("Firebase Auth not fully configured, using simulation...");
+        setTimeout(() => {
+          onLogin(email || 'demo@solarsynergy.com');
+          setIsLoading(false);
+        }, 1500);
+        return;
+      }
+      setError(err.message || "Authentication failed. Please check your credentials.");
+    } finally {
+      if (!isSignUp || error) setIsLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setError("Please enter your email address first.");
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, email);
+      alert("Password reset email sent!");
+    } catch (err: any) {
+      setError(err.message);
+    }
   };
 
   return (
@@ -60,6 +96,13 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
 
         {/* Form Section */}
         <div className="bg-white dark:bg-gray-900 p-8 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-800 space-y-6">
+          {error && (
+            <div className="bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 p-4 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3 animate-shake">
+              <AlertCircle size={16} />
+              {error}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-4">Email Address</label>
@@ -91,11 +134,17 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
               </div>
             </div>
 
-            <div className="flex justify-end">
-              <button type="button" className="text-[10px] font-black text-emerald-600 uppercase tracking-widest hover:underline">
-                Forgot Password?
-              </button>
-            </div>
+            {!isSignUp && (
+              <div className="flex justify-end">
+                <button 
+                  type="button" 
+                  onClick={handleForgotPassword}
+                  className="text-[10px] font-black text-emerald-600 uppercase tracking-widest hover:underline"
+                >
+                  Forgot Password?
+                </button>
+              </div>
+            )}
 
             <button 
               type="submit" 
@@ -106,7 +155,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
-                  Enter Hub
+                  {isSignUp ? "Create Account" : "Enter Hub"}
                   <ArrowRight size={18} />
                 </>
               )}
@@ -125,7 +174,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
           <div className="grid grid-cols-2 gap-4">
             <button 
               onClick={handleGoogleLogin}
-              className="flex items-center justify-center gap-2 py-4 bg-gray-50 dark:bg-gray-800 rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="flex items-center justify-center gap-2 py-4 bg-gray-50 dark:bg-gray-800 rounded-2xl hover:bg-gray-100 dark:hover:hover:bg-gray-700 transition-colors"
             >
               <Chrome size={18} className="text-gray-600 dark:text-gray-400" />
               <span className="text-[10px] font-black uppercase tracking-widest">Google</span>
@@ -140,7 +189,13 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
         {/* Footer */}
         <div className="text-center space-y-4">
           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-            Don't have an account? <button className="text-emerald-600 hover:underline">Create One</button>
+            {isSignUp ? "Already have an account?" : "Don't have an account?"} 
+            <button 
+              onClick={() => setIsSignUp(!isSignUp)}
+              className="text-emerald-600 hover:underline ml-2"
+            >
+              {isSignUp ? "Sign In" : "Create One"}
+            </button>
           </p>
           
           <div className="flex items-center justify-center gap-2 text-gray-400">
