@@ -18,6 +18,7 @@ interface ProfileViewProps {
   wifiIp: string;
   setWifiIp: (ip: string) => void;
   isWifiConnected: boolean;
+  onLogout: () => void;
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({ 
@@ -32,7 +33,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   setConnectionMode,
   wifiIp,
   setWifiIp,
-  isWifiConnected
+  isWifiConnected,
+  onLogout
 }) => {
   const { theme, toggleTheme } = useTheme();
   const [showQr, setShowQr] = useState(false);
@@ -423,9 +425,17 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       {showPrivacy && <PrivacyPolicy onClose={() => setShowPrivacy(false)} />}
       {showReport && <ReportIssueModal onClose={() => setShowReport(false)} />}
 
-      <div className="pt-8 pb-12 space-y-2 opacity-50">
-        <p className="text-[8px] text-center text-gray-400 font-black uppercase tracking-[0.2em]">ETP Group 17 • Solar Synergy v1.8</p>
-        <p className="text-[7px] text-center text-gray-400 font-black uppercase tracking-[0.3em]">Created by Ilhammencez Bin Mohd Rasyidi</p>
+      <div className="pt-8 pb-12 space-y-6 opacity-50">
+        <button 
+          onClick={onLogout}
+          className="w-full py-4 rounded-2xl border-2 border-rose-500/30 text-rose-500 font-black text-[10px] uppercase tracking-[0.3em] hover:bg-rose-500 hover:text-white transition-all active:scale-95"
+        >
+          Logout Session
+        </button>
+        <div className="space-y-2">
+          <p className="text-[8px] text-center text-gray-400 font-black uppercase tracking-[0.2em]">ETP Group 17 • Solar Synergy v1.8</p>
+          <p className="text-[7px] text-center text-gray-400 font-black uppercase tracking-[0.3em]">Created by Ilhammencez Bin Mohd Rasyidi</p>
+        </div>
       </div>
     </div>
   );
