@@ -87,7 +87,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex bg-gray-100 p-1.5 rounded-[2rem] gap-1">
+      <div className="flex bg-gray-100 dark:bg-gray-900 p-1.5 rounded-[2rem] gap-1 transition-colors">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -97,8 +97,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               onClick={() => setActiveTab(tab.id)}
               className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all ${
                 isActive 
-                  ? 'bg-white text-emerald-600 shadow-sm' 
-                  : 'text-gray-400 hover:text-gray-600'
+                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200 dark:shadow-none scale-[1.02]' 
+                  : 'text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800/50'
               }`}
             >
               <Icon size={14} />
