@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Calendar, Zap, CreditCard, ChevronRight, History as HistoryIcon, Trash2 } from 'lucide-react';
+import { Calendar, Zap, CreditCard, ChevronRight, History as HistoryIcon, Trash2, Clock, Leaf } from 'lucide-react';
 import { ChargingHistoryItem } from '../types';
 
 interface HistoryViewProps {
@@ -63,7 +63,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({ history, onClearHistor
                     <h3 className="font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight">{item.stationName}</h3>
                     <div className="flex items-center gap-2 mt-0.5">
                       <Calendar size={12} className="text-gray-400" />
-                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{item.date.toLocaleString()}</span>
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{item.date.toLocaleDateString()}</span>
                     </div>
                   </div>
                 </div>
@@ -71,7 +71,31 @@ export const HistoryView: React.FC<HistoryViewProps> = ({ history, onClearHistor
                   <p className={`text-xl font-black tracking-tighter ${item.amount > 0 ? 'text-gray-900 dark:text-gray-100' : 'text-emerald-600'}`}>
                     {item.amount > 0 ? `RM ${item.amount.toFixed(2)}` : 'FREE'}
                   </p>
-                  <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">{item.status}</span>
+                  <span className={`text-[9px] font-black uppercase tracking-widest ${item.status === 'Completed' ? 'text-emerald-500' : 'text-amber-500'}`}>
+                    {item.status}
+                  </span>
+                </div>
+              </div>
+
+              {/* Detailed Times */}
+              <div className="grid grid-cols-2 gap-4 mb-6 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-800">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-[8px] font-black text-gray-400 uppercase tracking-widest">
+                    <Clock size={10} />
+                    Start Time
+                  </div>
+                  <p className="text-xs font-black text-gray-700 dark:text-gray-300">
+                    {item.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-[8px] font-black text-gray-400 uppercase tracking-widest">
+                    <Clock size={10} />
+                    End Time
+                  </div>
+                  <p className="text-xs font-black text-gray-700 dark:text-gray-300">
+                    {item.endTime ? item.endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Ongoing'}
+                  </p>
                 </div>
               </div>
 
@@ -83,11 +107,17 @@ export const HistoryView: React.FC<HistoryViewProps> = ({ history, onClearHistor
                   </div>
                   <div>
                     <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Energy</p>
-                    <p className="text-xs font-black text-gray-700 dark:text-gray-300">{item.energy.toFixed(1)} Wh</p>
+                    <div className="flex items-center gap-1">
+                      <Zap size={10} className="text-amber-500" />
+                      <p className="text-xs font-black text-gray-700 dark:text-gray-300">{item.energy.toFixed(1)} Wh</p>
+                    </div>
                   </div>
                   <div>
                     <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Impact</p>
-                    <p className="text-xs font-black text-emerald-600">{item.co2Saved || '0g'} saved</p>
+                    <div className="flex items-center gap-1">
+                      <Leaf size={10} className="text-emerald-500" />
+                      <p className="text-xs font-black text-emerald-600">{item.co2Saved || '0g'} saved</p>
+                    </div>
                   </div>
                 </div>
                 <button className="p-2 bg-gray-50 dark:bg-gray-800 rounded-xl text-gray-400 group-hover:text-emerald-600 transition-colors">

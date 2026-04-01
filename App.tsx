@@ -194,6 +194,7 @@ export default function App() {
             id: doc.id,
             stationName: data.station?.name || 'Unknown Station',
             date: startTime,
+            endTime: completionTime || undefined,
             amount: Number((data.cost || 0) + (data.overstayFee || 0)),
             energy: energy,
             duration: completionTime ? 

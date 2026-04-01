@@ -50,7 +50,8 @@ export interface UserLocation {
 export interface ChargingHistoryItem {
   id: number | string;
   stationName: string;
-  date: Date;
+  date: Date; // Start Time
+  endTime?: Date; // End Time
   amount: number;
   energy: number;
   duration: string;
