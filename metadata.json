@@ -2,7 +2,8 @@
   "requestFramePermissions": [
     "geolocation",
     "bluetooth",
-    "camera"
+    "camera",
+    "notifications"
   ],
   "name": "Solar Synergy",
   "description": "Solar Synergy: Advanced micro-mobility charging platform for UTP. Features secure user authentication, sustainable solar charging, Bluetooth hub control, and AI-powered synergy assistance."

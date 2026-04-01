@@ -20,6 +20,7 @@ interface ProfileViewProps {
   setWifiIp: (ip: string) => void;
   isWifiConnected: boolean;
   onLogout: () => void;
+  fcmToken?: string | null;
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({ 
@@ -35,7 +36,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   wifiIp,
   setWifiIp,
   isWifiConnected,
-  onLogout
+  onLogout,
+  fcmToken
 }) => {
   const { theme, toggleTheme } = useTheme();
   const [showQr, setShowQr] = useState(false);
@@ -390,6 +392,33 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                       and bicycles, promoting a greener and smarter campus environment through innovative 
                       hardware integration and real-time synergy assistance.
                     </p>
+                  </div>
+
+                  <div className="p-8 bg-gray-50 dark:bg-gray-900/50 rounded-[2.5rem] border border-gray-100 dark:border-gray-800 space-y-6">
+                    <div className="flex items-center gap-4">
+                      <div className="p-2.5 bg-white dark:bg-gray-800 rounded-xl text-emerald-600 dark:text-emerald-400 shadow-sm">
+                        <ShieldCheck size={18} />
+                      </div>
+                      <p className="text-[11px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Notifications</p>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700">
+                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Push Status</span>
+                        <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${fcmToken ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
+                          {fcmToken ? 'ENABLED' : 'DISABLED'}
+                        </span>
+                      </div>
+
+                      {fcmToken && (
+                        <div className="p-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 space-y-2">
+                          <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Device Token</span>
+                          <div className="text-[7px] font-mono break-all opacity-50 select-all leading-tight">
+                            {fcmToken}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">

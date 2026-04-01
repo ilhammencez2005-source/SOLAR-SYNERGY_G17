@@ -13,7 +13,7 @@ import { ReceiptView } from './components/ReceiptView';
 import { LoginView } from './components/LoginView';
 import { STATIONS, PRICING } from './constants';
 import { Station, Session, UserLocation, ViewState, ChargingMode, Receipt, ChargingHistoryItem } from './types';
-import { auth, db, onAuthStateChanged, doc, getDoc, setDoc, updateDoc, collection, onSnapshot, query, where, addDoc, serverTimestamp, handleFirestoreError, OperationType } from './firebase';
+import { auth, db, messaging, onAuthStateChanged, doc, getDoc, setDoc, updateDoc, collection, onSnapshot, query, where, addDoc, serverTimestamp, handleFirestoreError, OperationType, getToken, onMessage } from './firebase';
 
 const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
 const CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
@@ -27,6 +27,7 @@ export default function App() {
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null); 
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [chargingHistory, setChargingHistory] = useState<ChargingHistoryItem[]>([]);
+  const [fcmToken, setFcmToken] = useState<string | null>(null);
   
   const [stations, setStations] = useState<Station[]>(STATIONS);
   const [isReservationMode, setIsReservationMode] = useState(false);
@@ -137,6 +138,45 @@ export default function App() {
       handleFirestoreError(error, OperationType.LIST, 'sessions');
     });
     
+    return () => unsubscribe();
+  }, [isLoggedIn]);
+
+  // Push Notifications
+  useEffect(() => {
+    if (!isLoggedIn || !messaging) return;
+
+    const requestPermission = async () => {
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted' && messaging) {
+          const token = await getToken(messaging, {
+            vapidKey: 'BEO_PLACEHOLDER_VAPID_KEY' // User needs to replace this with their actual VAPID key
+          });
+          if (token) {
+            console.log('FCM Token:', token);
+            setFcmToken(token);
+            // Save token to user profile in Firestore
+            if (auth.currentUser) {
+              await updateDoc(doc(db, 'users', auth.currentUser.uid), {
+                fcmToken: token
+              });
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Push Notification Error:', error);
+      }
+    };
+
+    requestPermission();
+
+    const unsubscribe = onMessage(messaging, (payload) => {
+      console.log('Foreground message received:', payload);
+      if (payload.notification?.title) {
+        showNotification(`${payload.notification.title}: ${payload.notification.body}`);
+      }
+    });
+
     return () => unsubscribe();
   }, [isLoggedIn]);
 
@@ -609,6 +649,7 @@ export default function App() {
               setWifiIp={setWifiIp}
               isWifiConnected={isWifiConnected}
               onLogout={() => { setIsLoggedIn(false); setUserEmail(null); setView('home'); }}
+              fcmToken={fcmToken}
             />
           )}
           {view === 'assistant' && (
