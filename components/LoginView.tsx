@@ -128,10 +128,15 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
                 <AlertCircle size={16} />
                 <span className="flex-1">{error}</span>
               </div>
-              {(error.includes('unauthorized-domain') || error.includes('Unauthorized')) && (
-                <p className="text-[8px] font-bold text-rose-500/80 uppercase tracking-widest leading-relaxed px-2">
-                  Tip: Add {window.location.hostname} to your Firebase Authorized Domains list.
-                </p>
+              {(error.includes('unauthorized-domain') || error.includes('Unauthorized') || error.includes('invalid-action') || error.includes('requested action is invalid')) && (
+                <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800/30 rounded-2xl space-y-2">
+                  <p className="text-[9px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-widest">Login Troubleshooting:</p>
+                  <ul className="text-[8px] font-bold text-amber-600 dark:text-amber-500 space-y-1 list-disc pl-3 uppercase tracking-tight">
+                    <li>Enable Google Sign-In in Firebase Console</li>
+                    <li>Add {window.location.hostname} to Authorized Domains</li>
+                    <li>Ensure your API Key is not restricted</li>
+                  </ul>
+                </div>
               )}
               {isSimulationError({ message: error }) && (
                 <button 
