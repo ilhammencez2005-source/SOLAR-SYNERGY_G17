@@ -36,9 +36,10 @@ export default function App() {
   const [isBleConnecting, setIsBleConnecting] = useState(false);
   
   // Auth State
+  const [isInitialAuthCheck, setIsInitialAuthCheck] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [isSimulation, setIsSimulation] = useState(false);
   const isSimulationRef = React.useRef(isSimulation);
 
@@ -67,18 +68,19 @@ export default function App() {
     }
   };
 
+  const isLoggedInRef = React.useRef(isLoggedIn);
+  useEffect(() => {
+    isLoggedInRef.current = isLoggedIn;
+  }, [isLoggedIn]);
+
   // Firebase Auth Listener
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      console.log("Auth state changed:", user ? "User logged in" : "No user");
+      console.log("Auth state changed:", user ? `User logged in: ${user.email}` : "No user");
       
       if (user) {
-        // Only show loading if we weren't already logged in
-        if (!isLoggedIn) setIsAuthLoading(true);
-        
-        setIsLoggedIn(true);
-        setSimulationMode(false);
-        setUserEmail(user.email);
+        // If we are already logged in, don't trigger a full screen reload
+        if (!isLoggedInRef.current) setIsAuthLoading(true);
         
         // Sync user profile/wallet from Firestore
         const userDocRef = doc(db, 'users', user.uid);
@@ -99,11 +101,20 @@ export default function App() {
             await setDoc(userDocRef, newUser);
             setWalletBalance(50.00);
           }
+          
+          // Only set logged in after we have the profile
+          setIsLoggedIn(true);
+          setSimulationMode(false);
+          setUserEmail(user.email);
         } catch (error) {
           console.error("Error syncing user profile:", error);
-          // Don't throw here to avoid blocking the UI
+          // Fallback to basic login if Firestore fails
+          setIsLoggedIn(true);
+          setSimulationMode(false);
+          setUserEmail(user.email);
         } finally {
           setIsAuthLoading(false);
+          setIsInitialAuthCheck(false);
         }
       } else {
         // Only clear if we're not in simulation mode
@@ -112,11 +123,12 @@ export default function App() {
           setUserEmail(null);
         }
         setIsAuthLoading(false);
+        setIsInitialAuthCheck(false);
       }
     });
     
     return () => unsubscribe();
-  }, [isLoggedIn]); // Add isLoggedIn to avoid stale closures
+  }, []); // Only register ONCE
 
   // Sync Stations from Firestore
   useEffect(() => {
@@ -153,7 +165,31 @@ export default function App() {
     
     // If simulation mode, we don't sync from Firestore
     if (isSimulation || !auth.currentUser) {
-      console.log("Simulation mode or no Firebase user, skipping history sync");
+      console.log("Simulation mode or no Firebase user, providing mock history");
+      setChargingHistory([
+        {
+          id: 'demo-1',
+          stationName: 'Solar Synergy Hub A',
+          date: new Date(Date.now() - 86400000),
+          endTime: new Date(Date.now() - 86400000 + 3600000),
+          amount: 12.50,
+          energy: 25.0,
+          duration: '60m',
+          co2Saved: '11.9g',
+          status: 'Completed'
+        },
+        {
+          id: 'demo-2',
+          stationName: 'Green Charge Point 1',
+          date: new Date(Date.now() - 172800000),
+          endTime: new Date(Date.now() - 172800000 + 1800000),
+          amount: 6.25,
+          energy: 12.5,
+          duration: '30m',
+          co2Saved: '5.9g',
+          status: 'Completed'
+        }
+      ]);
       return;
     }
     
@@ -631,10 +667,13 @@ export default function App() {
     setView('receipt');
   };
 
-  if (isAuthLoading) {
+  if (isInitialAuthCheck || isAuthLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest animate-pulse">Synchronizing Hub...</p>
+        </div>
       </div>
     );
   }

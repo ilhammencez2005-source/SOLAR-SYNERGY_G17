@@ -27,19 +27,15 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
     const code = err?.code || '';
     const message = (err?.message || '').toLowerCase();
     const isUnauthorized = code === 'auth/unauthorized-domain' || message.includes('unauthorized-domain');
+    const isConfigMissing = code === 'auth/configuration-not-found' || message.includes('configuration-not-found');
     
     if (isUnauthorized) {
       console.error("UNAUTHORIZED DOMAIN DETECTED. Please add this domain to Firebase Console > Auth > Settings > Authorized Domains.");
     }
 
-    return [
-      'auth/operation-not-allowed', 
-      'auth/user-not-found', 
-      'auth/configuration-not-found',
-      'auth/unauthorized-domain'
-    ].includes(code) || 
-    message.includes('unauthorized-domain') || 
-    message.includes('configuration-not-found');
+    // Only fallback automatically if it's a configuration/domain error
+    // or if the user is explicitly using a solarsynergy.com email
+    return isUnauthorized || isConfigMissing || (email.includes('solarsynergy.com') && code === 'auth/user-not-found');
   };
 
   const handleGoogleLogin = async () => {
@@ -64,6 +60,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+    console.log(`Attempting ${isSignUp ? 'Sign Up' : 'Sign In'} for: ${email}`);
 
     try {
       if (isSignUp) {
@@ -71,9 +68,10 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
       } else {
         await signInWithEmailAndPassword(auth, email, password);
       }
+      console.log("Auth operation successful");
       // onLogin is not needed here as onAuthStateChanged in App.tsx handles the state transition
     } catch (err: any) {
-      console.error("Auth Error:", err);
+      console.error("Auth Error:", err.code, err.message);
       if (isSimulationError(err)) {
         handleSimulationFallback();
         return;
@@ -203,6 +201,19 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
                 </>
               )}
             </button>
+
+            {!isSignUp && (
+              <button 
+                type="button"
+                onClick={() => {
+                  setEmail('demo@solarsynergy.com');
+                  setPassword('password123');
+                }}
+                className="w-full py-3 bg-gray-50 dark:bg-gray-800 text-gray-400 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-dashed border-gray-200 dark:border-gray-700"
+              >
+                Use Demo Credentials
+              </button>
+            )}
           </form>
 
           <div className="relative py-4">
