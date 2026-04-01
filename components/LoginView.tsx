@@ -46,9 +46,16 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
       }
     } catch (err: any) {
       console.error("Auth Error:", err);
-      // Fallback to simulation for demo if provider is not enabled or user not found
-      if (err.code === 'auth/operation-not-allowed' || err.code === 'auth/user-not-found' || err.code === 'auth/configuration-not-found') {
-        console.warn("Firebase Auth not fully configured, using simulation...");
+      // Fallback to simulation for demo if provider is not enabled or domain is not authorized
+      const simulationErrors = [
+        'auth/operation-not-allowed', 
+        'auth/user-not-found', 
+        'auth/configuration-not-found',
+        'auth/unauthorized-domain'
+      ];
+      
+      if (simulationErrors.includes(err.code)) {
+        console.warn(`Firebase Auth error (${err.code}), using simulation...`);
         setTimeout(() => {
           onLogin(email || 'demo@solarsynergy.com');
           setIsLoading(false);
