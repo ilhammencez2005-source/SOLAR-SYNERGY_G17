@@ -288,9 +288,9 @@ export default function App() {
             const newLevel = prev.chargeLevel + increment;
             
             // Calculate energy consumed in Wh (simulated)
-            // 40 steps to 100% (at 2.5% per step). 100Wh total = 2.5 Wh per step.
-            // 100Wh * RM 0.12 = RM 12.00 for full charge.
-            const energyInc = 2.5; 
+            // 40 steps to 100% (at 2.5% per step). 400Wh total = 10 Wh per step.
+            // 400Wh * RM 0.03 = RM 12.00 for full charge.
+            const energyInc = 10; 
             const newCost = prev.cost + (energyInc * PRICING.rate);
             
             if (newLevel >= 100) { 

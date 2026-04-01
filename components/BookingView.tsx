@@ -23,8 +23,8 @@ export const BookingView: React.FC<BookingViewProps> = ({ selectedStation, onBac
 
   const handleConfirmStart = () => {
     if (!selectedSlotId) return;
-    // Fixed rate of RM 0.15/Wh. Pre-auth RM 10.00
-    const preAuth = 10.00;
+    // Fixed rate of RM 0.03/Wh. Pre-auth RM 15.00
+    const preAuth = 15.00;
     onStartCharging('standard', selectedSlotId, 'full', preAuth);
   };
 
@@ -159,7 +159,7 @@ export const BookingView: React.FC<BookingViewProps> = ({ selectedStation, onBac
               </div>
               <div className="text-right">
                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Pre-Auth Amount</p>
-                <p className="text-xl font-black text-emerald-600">RM 10.00</p>
+                <p className="text-xl font-black text-emerald-600">RM 15.00</p>
               </div>
             </div>
             <button 
@@ -171,7 +171,7 @@ export const BookingView: React.FC<BookingViewProps> = ({ selectedStation, onBac
               <ArrowRight size={20} />
             </button>
             <p className="text-[8px] text-center text-gray-400 font-black uppercase tracking-widest">
-              By proceeding, you agree to the RM 10.00 pre-authorization fee.
+              By proceeding, you agree to the RM 15.00 pre-authorization fee.
             </p>
           </div>
         </div>
