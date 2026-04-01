@@ -21,6 +21,7 @@ interface ProfileViewProps {
   isWifiConnected: boolean;
   onLogout: () => void;
   onAddCredits: () => void;
+  userEmail: string | null;
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({ 
@@ -37,7 +38,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   setWifiIp,
   isWifiConnected,
   onLogout,
-  onAddCredits
+  onAddCredits,
+  userEmail
 }) => {
   const { theme, toggleTheme } = useTheme();
   const [showQr, setShowQr] = useState(false);
@@ -71,7 +73,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <User size={40} />
           </div>
           <div>
-            <h2 className="text-xl font-black text-gray-900 dark:text-white tracking-tight leading-none mb-1 uppercase">{auth.currentUser?.displayName || "Ilhammencez bin Mohd Rasyidi"}</h2>
+            <h2 className="text-xl font-black text-gray-900 dark:text-white tracking-tight leading-none mb-1 uppercase">
+              {auth.currentUser?.displayName || userEmail?.split('@')[0] || "Ilhammencez bin Mohd Rasyidi"}
+            </h2>
             <div className="flex items-center gap-2">
               <ShieldCheck size={14} className="text-emerald-500" />
               <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">VERIFIED USER</span>

@@ -40,18 +40,28 @@ export default function App() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isSimulation, setIsSimulation] = useState(false);
+  const isSimulationRef = React.useRef(isSimulation);
+
+  useEffect(() => {
+    isSimulationRef.current = isSimulation;
+  }, [isSimulation]);
 
   const addCredits = async (amount: number) => {
-    if (!auth.currentUser) return;
     const newBalance = walletBalance + amount;
     setWalletBalance(newBalance);
-    try {
-      await updateDoc(doc(db, 'users', auth.currentUser.uid), {
-        walletBalance: newBalance
-      });
-      showNotification(`RM ${amount.toFixed(2)} ADDED TO WALLET`);
-    } catch (error) {
-      console.error("Error updating balance:", error);
+    
+    if (auth.currentUser) {
+      try {
+        await updateDoc(doc(db, 'users', auth.currentUser.uid), {
+          walletBalance: newBalance
+        });
+        showNotification(`RM ${amount.toFixed(2)} ADDED TO WALLET`);
+      } catch (error) {
+        console.error("Error updating balance:", error);
+        handleFirestoreError(error, OperationType.UPDATE, `users/${auth.currentUser.uid}`);
+      }
+    } else {
+      showNotification(`RM ${amount.toFixed(2)} ADDED (DEMO MODE)`);
     }
   };
 
@@ -89,7 +99,7 @@ export default function App() {
         setIsAuthLoading(false);
       } else {
         // Only clear if we're not in simulation mode
-        if (!isSimulation) {
+        if (!isSimulationRef.current) {
           setIsLoggedIn(false);
           setUserEmail(null);
         }
@@ -98,7 +108,7 @@ export default function App() {
     });
     
     return () => unsubscribe();
-  }, [isSimulation]);
+  }, []); // Remove isSimulation dependency
 
   // Sync Stations from Firestore
   useEffect(() => {
@@ -152,8 +162,10 @@ export default function App() {
           let completionTime: Date | null = null;
           try {
             if (data.completionTime) {
-              completionTime = data.completionTime?.toDate?.() || new Date(data.completionTime);
-              if (isNaN(completionTime.getTime())) completionTime = null;
+              const parsedTime = data.completionTime?.toDate?.() || new Date(data.completionTime);
+              if (!isNaN(parsedTime.getTime())) {
+                completionTime = parsedTime;
+              }
             }
           } catch (e) {
             completionTime = null;
@@ -492,9 +504,9 @@ export default function App() {
 
   const startCharging = async (mode: ChargingMode, slotId: string, duration: number | 'full', preAuth: number) => {
     if (preAuth > walletBalance) return showNotification("INSUFFICIENT CREDITS");
-    if (!isLoggedIn || !auth.currentUser) return showNotification("LOGIN REQUIRED");
+    if (!isLoggedIn) return showNotification("LOGIN REQUIRED");
     
-    console.log("Starting charge for user:", auth.currentUser.uid);
+    console.log("Starting charge for user:", auth.currentUser?.uid || 'demo-user');
     
     // Only lock immediately if NOT in reservation mode
     if (!isReservationMode) {
@@ -671,6 +683,7 @@ export default function App() {
             <ProfileView 
               walletBalance={walletBalance} 
               onAddCredits={() => addCredits(50.00)}
+              userEmail={userEmail}
               isBleConnected={!!bleCharacteristic}
               isBleConnecting={isBleConnecting}
               bleDeviceName={bleDevice?.name}
