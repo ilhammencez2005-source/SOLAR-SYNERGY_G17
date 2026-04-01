@@ -26,6 +26,12 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
   const isSimulationError = (err: any) => {
     const code = err?.code || '';
     const message = (err?.message || '').toLowerCase();
+    const isUnauthorized = code === 'auth/unauthorized-domain' || message.includes('unauthorized-domain');
+    
+    if (isUnauthorized) {
+      console.error("UNAUTHORIZED DOMAIN DETECTED. Please add this domain to Firebase Console > Auth > Settings > Authorized Domains.");
+    }
+
     return [
       'auth/operation-not-allowed', 
       'auth/user-not-found', 
@@ -120,8 +126,13 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
             <div className="bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 p-4 rounded-2xl space-y-3 animate-shake">
               <div className="text-[10px] font-black uppercase tracking-widest flex items-center gap-3">
                 <AlertCircle size={16} />
-                {error}
+                <span className="flex-1">{error}</span>
               </div>
+              {(error.includes('unauthorized-domain') || error.includes('Unauthorized')) && (
+                <p className="text-[8px] font-bold text-rose-500/80 uppercase tracking-widest leading-relaxed px-2">
+                  Tip: Add {window.location.hostname} to your Firebase Authorized Domains list.
+                </p>
+              )}
               {isSimulationError({ message: error }) && (
                 <button 
                   onClick={() => handleSimulationFallback()}
