@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, memo } from 'react';
 import { MapPin, Crosshair, CalendarClock, Zap, ArrowRight, Sun, Leaf, X, Star, Clock, Info, Search, Camera, Shield, AlertTriangle } from 'lucide-react';
 import { Station, UserLocation } from '../types';
 import { PRICING } from '../constants';
@@ -16,7 +16,7 @@ interface HomeViewProps {
   onPrebook: (station: Station) => void;
 }
 
-export const HomeView: React.FC<HomeViewProps> = ({ userLocation, mapCenter, handleLocateMe, stations, onBookStation, onPrebook }) => {
+export const HomeView: React.FC<HomeViewProps> = memo(({ userLocation, mapCenter, handleLocateMe, stations, onBookStation, onPrebook }) => {
   const [detailStation, setDetailStation] = useState<Station | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isAROpen, setIsAROpen] = useState(false);
@@ -369,4 +369,4 @@ export const HomeView: React.FC<HomeViewProps> = ({ userLocation, mapCenter, han
        )}
     </div>
   );
-};
+});

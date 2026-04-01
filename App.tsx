@@ -22,7 +22,7 @@ export default function App() {
   const [view, setView] = useState<ViewState>('home'); 
   const [selectedStation, setSelectedStation] = useState<Station | null>(null);
   const [activeSession, setActiveSession] = useState<Session | null>(null);
-  const [walletBalance, setWalletBalance] = useState(50.00);
+  const [walletBalance, setWalletBalance] = useState(100.00);
   const [notification, setNotification] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null); 
   const [receipt, setReceipt] = useState<Receipt | null>(null);
@@ -40,6 +40,20 @@ export default function App() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isSimulation, setIsSimulation] = useState(false);
+
+  const addCredits = async (amount: number) => {
+    if (!auth.currentUser) return;
+    const newBalance = walletBalance + amount;
+    setWalletBalance(newBalance);
+    try {
+      await updateDoc(doc(db, 'users', auth.currentUser.uid), {
+        walletBalance: newBalance
+      });
+      showNotification(`RM ${amount.toFixed(2)} ADDED TO WALLET`);
+    } catch (error) {
+      console.error("Error updating balance:", error);
+    }
+  };
 
   // Firebase Auth Listener
   useEffect(() => {
@@ -103,7 +117,10 @@ export default function App() {
         });
       } else {
         const updatedStations = snapshot.docs.map(doc => doc.data() as Station);
-        setStations(updatedStations);
+        setStations(prev => {
+          if (JSON.stringify(prev) === JSON.stringify(updatedStations)) return prev;
+          return updatedStations;
+        });
       }
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'stations');
@@ -627,6 +644,7 @@ export default function App() {
           {view === 'profile' && (
             <ProfileView 
               walletBalance={walletBalance} 
+              onAddCredits={() => addCredits(50.00)}
               isBleConnected={!!bleCharacteristic}
               isBleConnecting={isBleConnecting}
               bleDeviceName={bleDevice?.name}
