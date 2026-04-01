@@ -135,20 +135,38 @@ export default function App() {
     
     const q = query(collection(db, 'sessions'), where('uid', '==', auth.currentUser.uid));
     const unsubscribe = onSnapshot(q, (snapshot) => {
+      console.log("Sessions snapshot size:", snapshot.size);
       const history = snapshot.docs
         .map(doc => {
           const data = doc.data();
-          const startTime = data.startTime?.toDate?.() || new Date(data.startTime);
-          const completionTime = data.completionTime?.toDate?.() || (data.completionTime ? new Date(data.completionTime) : null);
           
-          const energy = data.energyConsumed || (data.cost / PRICING.rate);
+          // Robust date handling
+          let startTime: Date;
+          try {
+            startTime = data.startTime?.toDate?.() || new Date(data.startTime);
+            if (isNaN(startTime.getTime())) startTime = new Date();
+          } catch (e) {
+            startTime = new Date();
+          }
+
+          let completionTime: Date | null = null;
+          try {
+            if (data.completionTime) {
+              completionTime = data.completionTime?.toDate?.() || new Date(data.completionTime);
+              if (isNaN(completionTime.getTime())) completionTime = null;
+            }
+          } catch (e) {
+            completionTime = null;
+          }
+          
+          const energy = Number(data.energyConsumed || (data.cost / PRICING.rate) || 0);
           const co2Saved = (energy * 0.475).toFixed(1);
 
           return {
             id: doc.id,
             stationName: data.station?.name || 'Unknown Station',
             date: startTime,
-            amount: (data.cost || 0) + (data.overstayFee || 0),
+            amount: Number((data.cost || 0) + (data.overstayFee || 0)),
             energy: energy,
             duration: completionTime ? 
               `${Math.floor((completionTime.getTime() - startTime.getTime()) / 60000)}m` : 
@@ -158,13 +176,16 @@ export default function App() {
           } as ChargingHistoryItem;
         })
         .sort((a, b) => b.date.getTime() - a.date.getTime());
+      
+      console.log("Processed history items:", history.length);
       setChargingHistory(history);
     }, (error) => {
+      console.error("History sync error:", error);
       handleFirestoreError(error, OperationType.LIST, 'sessions');
     });
     
     return () => unsubscribe();
-  }, [isLoggedIn]);
+  }, [isLoggedIn, auth.currentUser?.uid]);
 
   // WiFi State
   const [connectionMode, setConnectionMode] = useState<'ble' | 'wifi'>('ble');
@@ -471,7 +492,9 @@ export default function App() {
 
   const startCharging = async (mode: ChargingMode, slotId: string, duration: number | 'full', preAuth: number) => {
     if (preAuth > walletBalance) return showNotification("INSUFFICIENT CREDITS");
-    if (!isLoggedIn) return showNotification("LOGIN REQUIRED");
+    if (!isLoggedIn || !auth.currentUser) return showNotification("LOGIN REQUIRED");
+    
+    console.log("Starting charge for user:", auth.currentUser.uid);
     
     // Only lock immediately if NOT in reservation mode
     if (!isReservationMode) {
@@ -513,9 +536,12 @@ export default function App() {
     // Save session to Firestore if real user
     if (auth.currentUser) {
       try {
+        console.log("Attempting to save session to Firestore with data:", sessionData);
         const sessionRef = await addDoc(collection(db, 'sessions'), sessionData);
+        console.log("Session saved successfully with ID:", sessionRef.id);
         setActiveSession({ ...sessionData, id: sessionRef.id } as any);
       } catch (error) {
+        console.error("Failed to save session to Firestore:", error);
         handleFirestoreError(error, OperationType.CREATE, 'sessions');
       }
     } else {
