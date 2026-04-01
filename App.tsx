@@ -42,9 +42,11 @@ export default function App() {
   const [isSimulation, setIsSimulation] = useState(false);
   const isSimulationRef = React.useRef(isSimulation);
 
-  useEffect(() => {
-    isSimulationRef.current = isSimulation;
-  }, [isSimulation]);
+  // Sync ref with state immediately
+  const setSimulationMode = (val: boolean) => {
+    setIsSimulation(val);
+    isSimulationRef.current = val;
+  };
 
   const addCredits = async (amount: number) => {
     const newBalance = walletBalance + amount;
@@ -68,10 +70,14 @@ export default function App() {
   // Firebase Auth Listener
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      console.log("Auth state changed:", user ? "User logged in" : "No user");
+      
       if (user) {
-        setIsAuthLoading(true);
+        // Only show loading if we weren't already logged in
+        if (!isLoggedIn) setIsAuthLoading(true);
+        
         setIsLoggedIn(true);
-        setIsSimulation(false);
+        setSimulationMode(false);
         setUserEmail(user.email);
         
         // Sync user profile/wallet from Firestore
@@ -94,9 +100,11 @@ export default function App() {
             setWalletBalance(50.00);
           }
         } catch (error) {
-          handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
+          console.error("Error syncing user profile:", error);
+          // Don't throw here to avoid blocking the UI
+        } finally {
+          setIsAuthLoading(false);
         }
-        setIsAuthLoading(false);
       } else {
         // Only clear if we're not in simulation mode
         if (!isSimulationRef.current) {
@@ -108,7 +116,7 @@ export default function App() {
     });
     
     return () => unsubscribe();
-  }, []); // Remove isSimulation dependency
+  }, [isLoggedIn]); // Add isLoggedIn to avoid stale closures
 
   // Sync Stations from Firestore
   useEffect(() => {
@@ -141,11 +149,19 @@ export default function App() {
 
   // Sync History from Firestore
   useEffect(() => {
-    if (!isLoggedIn || !auth.currentUser) return;
+    if (!isLoggedIn) return;
     
+    // If simulation mode, we don't sync from Firestore
+    if (isSimulation || !auth.currentUser) {
+      console.log("Simulation mode or no Firebase user, skipping history sync");
+      return;
+    }
+    
+    console.log("Starting history sync for UID:", auth.currentUser.uid);
     const q = query(collection(db, 'sessions'), where('uid', '==', auth.currentUser.uid));
+    
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      console.log("Sessions snapshot size:", snapshot.size);
+      console.log("History snapshot received, size:", snapshot.size);
       const history = snapshot.docs
         .map(doc => {
           const data = doc.data();
@@ -189,15 +205,15 @@ export default function App() {
         })
         .sort((a, b) => b.date.getTime() - a.date.getTime());
       
-      console.log("Processed history items:", history.length);
+      console.log("Final history items count:", history.length);
       setChargingHistory(history);
     }, (error) => {
       console.error("History sync error:", error);
-      handleFirestoreError(error, OperationType.LIST, 'sessions');
+      // Don't throw here to avoid crashing the app
     });
     
     return () => unsubscribe();
-  }, [isLoggedIn, auth.currentUser?.uid]);
+  }, [isLoggedIn, isSimulation, auth.currentUser?.uid]);
 
   // WiFi State
   const [connectionMode, setConnectionMode] = useState<'ble' | 'wifi'>('ble');
@@ -626,7 +642,7 @@ export default function App() {
     return <LoginView onLogin={(email) => { 
       setIsLoggedIn(true); 
       setUserEmail(email); 
-      if (email.includes('solarsynergy.com')) setIsSimulation(true);
+      if (email.includes('solarsynergy.com')) setSimulationMode(true);
     }} />;
   }
 
@@ -695,7 +711,12 @@ export default function App() {
               wifiIp={wifiIp}
               setWifiIp={setWifiIp}
               isWifiConnected={isWifiConnected}
-              onLogout={() => { setIsLoggedIn(false); setUserEmail(null); setView('home'); }}
+              onLogout={() => { 
+                setIsLoggedIn(false); 
+                setUserEmail(null); 
+                setSimulationMode(false);
+                setView('home'); 
+              }}
             />
           )}
           {view === 'assistant' && (
