@@ -4,6 +4,7 @@ import { User, Wallet, ShieldCheck, Bluetooth, Loader2, ChevronRight, Zap, QrCod
 import { useTheme } from '../ThemeContext';
 import { PrivacyPolicy } from './PrivacyPolicy';
 import { ReportIssueModal } from './ReportIssueModal';
+import { auth, signOut } from '../firebase';
 
 interface ProfileViewProps {
   walletBalance: number;
@@ -44,6 +45,15 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   
   const isBluetoothSupported = typeof navigator !== 'undefined' && !!(navigator as any).bluetooth;
 
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      onLogout();
+    } catch (error) {
+      console.error("Logout Error:", error);
+    }
+  };
+
   const tabs = [
     { id: 'wallet', label: 'Wallet', icon: Wallet },
     { id: 'hub', label: 'Hub Connection', icon: Bluetooth },
@@ -59,7 +69,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <User size={40} />
           </div>
           <div>
-            <h2 className="text-xl font-black text-gray-900 dark:text-white tracking-tight leading-none mb-1 uppercase">Ilhammencez bin Mohd Rasyidi</h2>
+            <h2 className="text-xl font-black text-gray-900 dark:text-white tracking-tight leading-none mb-1 uppercase">{auth.currentUser?.displayName || "Ilhammencez bin Mohd Rasyidi"}</h2>
             <div className="flex items-center gap-2">
               <ShieldCheck size={14} className="text-emerald-500" />
               <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">VERIFIED USER</span>
@@ -427,7 +437,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
       <div className="pt-8 pb-12 space-y-6 opacity-50">
         <button 
-          onClick={onLogout}
+          onClick={handleLogout}
           className="w-full py-4 rounded-2xl border-2 border-rose-500/30 text-rose-500 font-black text-[10px] uppercase tracking-[0.3em] hover:bg-rose-500 hover:text-white transition-all active:scale-95"
         >
           Logout Session

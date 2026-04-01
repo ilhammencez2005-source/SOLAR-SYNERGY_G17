@@ -13,6 +13,7 @@ import { ReceiptView } from './components/ReceiptView';
 import { LoginView } from './components/LoginView';
 import { STATIONS, PRICING } from './constants';
 import { Station, Session, UserLocation, ViewState, ChargingMode, Receipt, ChargingHistoryItem } from './types';
+import { auth, db, onAuthStateChanged, doc, getDoc, setDoc, updateDoc, collection, onSnapshot, query, where, addDoc, serverTimestamp, handleFirestoreError, OperationType } from './firebase';
 
 const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
 const CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
@@ -38,6 +39,107 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
+  // Firebase Auth Listener
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setIsLoggedIn(true);
+        setUserEmail(user.email);
+        
+        // Sync user profile/wallet from Firestore
+        const userDocRef = doc(db, 'users', user.uid);
+        try {
+          const userDoc = await getDoc(userDocRef);
+          if (userDoc.exists()) {
+            setWalletBalance(userDoc.data().walletBalance);
+          } else {
+            // Create initial user profile
+            const newUser = {
+              uid: user.uid,
+              email: user.email,
+              displayName: user.displayName,
+              walletBalance: 50.00,
+              createdAt: serverTimestamp(),
+              role: 'client'
+            };
+            await setDoc(userDocRef, newUser);
+            setWalletBalance(50.00);
+          }
+        } catch (error) {
+          handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
+        }
+      } else {
+        setIsLoggedIn(false);
+        setUserEmail(null);
+      }
+    });
+    
+    return () => unsubscribe();
+  }, []);
+
+  // Sync Stations from Firestore
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    
+    const q = query(collection(db, 'stations'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      if (snapshot.empty) {
+        // Seed stations if empty (first time)
+        STATIONS.forEach(async (s) => {
+          try {
+            await setDoc(doc(db, 'stations', s.id.toString()), s);
+          } catch (error) {
+            console.error("Error seeding station:", error);
+          }
+        });
+      } else {
+        const updatedStations = snapshot.docs.map(doc => doc.data() as Station);
+        setStations(updatedStations);
+      }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'stations');
+    });
+    
+    return () => unsubscribe();
+  }, [isLoggedIn]);
+
+  // Sync History from Firestore
+  useEffect(() => {
+    if (!isLoggedIn || !auth.currentUser) return;
+    
+    const q = query(collection(db, 'sessions'), where('uid', '==', auth.currentUser.uid));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const history = snapshot.docs
+        .map(doc => {
+          const data = doc.data();
+          const startTime = data.startTime?.toDate?.() || new Date(data.startTime);
+          const completionTime = data.completionTime?.toDate?.() || (data.completionTime ? new Date(data.completionTime) : null);
+          
+          const energy = data.energyConsumed || (data.cost / PRICING.rate);
+          const co2Saved = (energy * 0.475).toFixed(1);
+
+          return {
+            id: doc.id,
+            stationName: data.station?.name || 'Unknown Station',
+            date: startTime.toLocaleString(),
+            amount: (data.cost || 0) + (data.overstayFee || 0),
+            energy: energy,
+            duration: completionTime ? 
+              `${Math.floor((completionTime.getTime() - startTime.getTime()) / 60000)}m` : 
+              'Active',
+            co2Saved: `${co2Saved}g`,
+            status: data.status === 'completed' ? 'Completed' : 'Active'
+          } as ChargingHistoryItem;
+        })
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      setChargingHistory(history);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'sessions');
+    });
+    
+    return () => unsubscribe();
+  }, [isLoggedIn]);
+
   // WiFi State
   const [connectionMode, setConnectionMode] = useState<'ble' | 'wifi'>('ble');
   const [wifiIp, setWifiIp] = useState<string>('');
@@ -52,16 +154,12 @@ export default function App() {
       const isOccupied = value.includes("OCCUPIED") || value.includes("VIBRATION_ALERT");
       const isVacant = value.includes("AVAILABLE") || value.includes("VACANT");
       
-      setStations(prev => prev.map(s => {
-        if (s.name === "Village 4") {
-          return {
-            ...s,
-            status: isOccupied ? "Occupied" : "Active",
-            slots: isOccupied ? 0 : 1
-          };
-        }
-        return s;
-      }));
+      // Sync to Firestore
+      const stationRef = doc(db, 'stations', '4'); // Village 4 is ID 4
+      updateDoc(stationRef, {
+        status: isOccupied ? "Occupied" : "Active",
+        slots: isOccupied ? 0 : 1
+      }).catch(err => handleFirestoreError(err, OperationType.UPDATE, 'stations/4'));
       
       if (value.includes("VIBRATION_ALERT")) {
         if (!lastVibState) {
@@ -220,12 +318,14 @@ export default function App() {
           const data = await res.text();
           if (data.includes("OCCUPIED") || data.includes("AVAILABLE") || data.includes("VACANT") || data.includes("VIBRATION_ALERT")) {
             const isOccupied = data.includes("OCCUPIED") || data.includes("VIBRATION_ALERT");
-            setStations(prev => prev.map(s => {
-              if (s.name === "Village 4") {
-                return { ...s, status: isOccupied ? "Occupied" : "Active", slots: isOccupied ? 0 : 1 };
-              }
-              return s;
-            }));
+            
+            // Sync to Firestore
+            const stationRef = doc(db, 'stations', '4');
+            updateDoc(stationRef, {
+              status: isOccupied ? "Occupied" : "Active",
+              slots: isOccupied ? 0 : 1
+            }).catch(err => handleFirestoreError(err, OperationType.UPDATE, 'stations/4'));
+            
             setIsWifiConnected(true);
             
             if (data.includes("VIBRATION_ALERT")) {
@@ -345,6 +445,7 @@ export default function App() {
 
   const startCharging = async (mode: ChargingMode, slotId: string, duration: number | 'full', preAuth: number) => {
     if (preAuth > walletBalance) return showNotification("INSUFFICIENT CREDITS");
+    if (!auth.currentUser) return showNotification("LOGIN REQUIRED");
     
     // Only lock immediately if NOT in reservation mode
     if (!isReservationMode) {
@@ -356,8 +457,16 @@ export default function App() {
       showNotification("RESERVATION ACTIVE - PARK YOUR SCOOTER");
     }
     
-    setWalletBalance(p => p - preAuth);
-    setActiveSession({ 
+    const newBalance = walletBalance - preAuth;
+    setWalletBalance(newBalance);
+    
+    // Sync wallet to Firestore
+    const userDocRef = doc(db, 'users', auth.currentUser.uid);
+    updateDoc(userDocRef, { walletBalance: newBalance })
+      .catch(err => handleFirestoreError(err, OperationType.UPDATE, `users/${auth.currentUser?.uid}`));
+
+    const sessionData = { 
+      uid: auth.currentUser.uid,
       station: selectedStation!, 
       mode, 
       slotId, 
@@ -371,12 +480,21 @@ export default function App() {
       durationLimit: duration, 
       timeElapsed: 0, 
       isLocked: !isReservationMode 
-    });
+    };
+
+    // Save session to Firestore
+    try {
+      const sessionRef = await addDoc(collection(db, 'sessions'), sessionData);
+      setActiveSession({ ...sessionData, id: sessionRef.id } as any);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, 'sessions');
+    }
+    
     setView('charging');
   };
 
   const endSession = async (cur = activeSession) => {
-    if (!cur) return;
+    if (!cur || !auth.currentUser) return;
     
     await sendCommand('UNLOCK');
 
@@ -385,20 +503,26 @@ export default function App() {
     const energy = cur.cost / PRICING.rate; 
     const co2Saved = (energy * 0.475).toFixed(1); // 475g per kWh
     
-    setWalletBalance(p => p + refund);
+    const newBalance = walletBalance + refund;
+    setWalletBalance(newBalance);
+
+    // Sync wallet to Firestore
+    const userDocRef = doc(db, 'users', auth.currentUser.uid);
+    updateDoc(userDocRef, { walletBalance: newBalance })
+      .catch(err => handleFirestoreError(err, OperationType.UPDATE, `users/${auth.currentUser?.uid}`));
+
+    // Update session in Firestore
+    if ((cur as any).id) {
+      const sessionRef = doc(db, 'sessions', (cur as any).id);
+      updateDoc(sessionRef, {
+        status: 'completed',
+        completionTime: new Date(),
+        cost: cur.cost,
+        overstayFee: cur.overstayFee,
+        energyConsumed: energy
+      }).catch(err => handleFirestoreError(err, OperationType.UPDATE, `sessions/${(cur as any).id}`));
+    }
     
-    const historyItem: ChargingHistoryItem = {
-      id: Date.now(),
-      stationName: cur.station.name,
-      date: new Date().toLocaleString(),
-      amount: totalCost,
-      energy: energy,
-      duration: `${Math.floor(cur.timeElapsed / 60)}m ${cur.timeElapsed % 60}s`,
-      co2Saved: `${co2Saved}g`,
-      status: 'Completed'
-    };
-    
-    setChargingHistory(prev => [historyItem, ...prev]);
     setReceipt({ 
       stationName: cur.station.name, 
       date: new Date().toLocaleString(), 
@@ -406,7 +530,7 @@ export default function App() {
       totalEnergy: `${energy.toFixed(1)}Wh`, 
       mode: cur.mode, 
       cost: cur.cost, 
-      overstayFee: cur.overstayFee,
+      overstayFee: cur.overstayFee, 
       paid: totalCost, 
       refund: refund,
       co2Saved: `${co2Saved}g`
@@ -418,7 +542,7 @@ export default function App() {
   };
 
   if (!isLoggedIn) {
-    return <LoginView onLogin={(email) => { setIsLoggedIn(true); setUserEmail(email); }} />;
+    return <LoginView onLogin={() => {}} />;
   }
 
   return (

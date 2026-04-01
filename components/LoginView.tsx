@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Zap, Mail, Lock, ArrowRight, ShieldCheck, Github, Chrome } from 'lucide-react';
 import { motion } from 'motion/react';
+import { auth, googleProvider, signInWithPopup } from '../firebase';
 
 interface LoginViewProps {
   onLogin: (email: string) => void;
@@ -12,10 +13,25 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  const handleGoogleLogin = async () => {
+    setIsLoading(true);
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      if (result.user.email) {
+        onLogin(result.user.email);
+      }
+    } catch (error) {
+      console.error("Google Login Error:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simulate login
+    // For demo, we still simulate email/password login as we haven't enabled it in Firebase console
+    // but we'll use the onLogin callback which will be handled by onAuthStateChanged in App.tsx
     setTimeout(() => {
       onLogin(email || 'demo@solarsynergy.com');
       setIsLoading(false);
@@ -107,7 +123,10 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <button className="flex items-center justify-center gap-2 py-4 bg-gray-50 dark:bg-gray-800 rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+            <button 
+              onClick={handleGoogleLogin}
+              className="flex items-center justify-center gap-2 py-4 bg-gray-50 dark:bg-gray-800 rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
               <Chrome size={18} className="text-gray-600 dark:text-gray-400" />
               <span className="text-[10px] font-black uppercase tracking-widest">Google</span>
             </button>
