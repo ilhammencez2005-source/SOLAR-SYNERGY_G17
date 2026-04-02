@@ -10,7 +10,6 @@ import { GeminiAssistant } from './components/GeminiAssistant';
 import { HistoryView } from './components/HistoryView';
 import { ProfileView } from './components/ProfileView';
 import { ReceiptView } from './components/ReceiptView';
-import { LoginView } from './components/LoginView';
 import { STATIONS, PRICING } from './constants';
 import { Station, Session, UserLocation, ViewState, ChargingMode, Receipt, ChargingHistoryItem } from './types';
 
@@ -35,8 +34,8 @@ export default function App() {
   const [isBleConnecting, setIsBleConnecting] = useState(false);
   
   // Auth State
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(true);
+  const [userEmail, setUserEmail] = useState<string | null>('demo@user.com');
 
   // WiFi State
   const [connectionMode, setConnectionMode] = useState<'ble' | 'wifi'>('ble');
@@ -417,10 +416,6 @@ export default function App() {
     setView('receipt');
   };
 
-  if (!isLoggedIn) {
-    return <LoginView onLogin={(email) => { setIsLoggedIn(true); setUserEmail(email); }} />;
-  }
-
   return (
     <div className="flex flex-col h-screen w-full bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 font-sans overflow-hidden transition-colors">
         {notification && (
@@ -484,7 +479,6 @@ export default function App() {
               wifiIp={wifiIp}
               setWifiIp={setWifiIp}
               isWifiConnected={isWifiConnected}
-              onLogout={() => { setIsLoggedIn(false); setUserEmail(null); setView('home'); }}
             />
           )}
           {view === 'assistant' && (

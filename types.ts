@@ -48,14 +48,15 @@ export interface UserLocation {
 }
 
 export interface ChargingHistoryItem {
-  id: number;
+  id: number | string;
   stationName: string;
-  date: string;
+  date: Date; // Start Time
+  endTime?: Date; // End Time
   amount: number;
   energy: number;
   duration: string;
   co2Saved: string;
-  status: 'Completed';
+  status: 'Completed' | 'Active';
 }
 
 export interface Receipt {
